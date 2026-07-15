@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\sdk\afh-common-ai\src\AFH.Common.AI\AFH.Common.AI.csproj" />
+    <ProjectReference Include="..\..\..\..\sdk\afh-common-mcp\src\AFH.Common.Mcp\AFH.Common.Mcp.csproj" />
+  </ItemGroup>
+</Project>

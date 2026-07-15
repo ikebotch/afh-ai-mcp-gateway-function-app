@@ -1,0 +1,16 @@
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.cache
+*.log
+
+# Azure Functions local secrets.
+local.settings.json
+
+# OS files.
+.DS_Store
+Thumbs.db

@@ -1,0 +1,22 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "McpGateway__DryRunDownstreamCalls": "true",
+    "McpGateway__RealDownstreamTools__0": "booking.get_lifecycle",
+    "McpGateway__ApiKey": "",
+    "McpGateway__Authentication__Enabled": "false",
+    "McpGateway__Authentication__TenantId": "",
+    "McpGateway__Authentication__Audience": "api://afh-ai-mcp-gateway",
+    "McpGateway__Audit__Provider": "TableStorage",
+    "McpGateway__Audit__ConnectionString": "UseDevelopmentStorage=true",
+    "McpGateway__Audit__TableName": "AiToolAudit",
+    "Services__Booking__BaseUrl": "http://localhost:7071",
+    "Services__Calendar__BaseUrl": "http://localhost:7072",
+    "Services__Notification__BaseUrl": "http://localhost:7073",
+    "Services__Location__BaseUrl": "http://localhost:7074",
+    "Services__ClientIntegration__BaseUrl": "http://localhost:7075",
+    "Services__DevOps__BaseUrl": "http://localhost:7076"
+  }
+}

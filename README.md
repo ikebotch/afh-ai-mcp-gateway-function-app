@@ -14,8 +14,22 @@ Phase 1 implementation of Option B: a central AI-facing MCP Gateway that routes 
 | Method | Route | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check. |
+| `POST` | `/api/mcp` | JSON-RPC MCP endpoint for agent clients. |
 | `GET` | `/api/mcp/v1/tools` | Lists the Phase 1 AI tools. |
 | `POST` | `/api/mcp/v1/tools/{toolName}/invoke` | Invokes a registered AI tool. |
+
+The Copilot-facing MCP endpoint is `/api/mcp`. The `/api/mcp/v1/*` endpoints are retained for local diagnostics and simple HTTP smoke tests.
+
+## MCP Methods
+
+The JSON-RPC MCP endpoint supports:
+
+| Method | Purpose |
+| --- | --- |
+| `initialize` | Returns gateway protocol capabilities and server metadata. |
+| `notifications/initialized` | Accepts the client initialized notification. |
+| `tools/list` | Returns registered tools and JSON input schemas. |
+| `tools/call` | Invokes a registered AFH tool through the gateway policy, audit, and downstream invocation path. |
 
 ## Phase 1 Tools
 

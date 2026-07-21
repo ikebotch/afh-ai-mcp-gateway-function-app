@@ -14,6 +14,9 @@ Phase 1 implementation of Option B: a central AI-facing MCP Gateway that routes 
 | Method | Route | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check. |
+| `GET` | `/api/openapi/v1.json` | OpenAPI document used by Scalar. |
+| `GET` | `/api/scalar` | Scalar API reference UI. |
+| `GET` | `/api/mcp/scalar` | Route-scoped Scalar API reference UI alias. |
 | `POST` | `/api/mcp` | JSON-RPC MCP endpoint for agent clients. |
 | `GET` | `/api/mcp/v1/tools` | Lists the Phase 1 AI tools. |
 | `POST` | `/api/mcp/v1/tools/{toolName}/invoke` | Invokes a registered AI tool. |

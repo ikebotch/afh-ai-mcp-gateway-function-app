@@ -101,6 +101,11 @@ public sealed class McpGatewayAuthenticationOptions
     public bool LogRequestDiagnostics { get; set; }
 
     /// <summary>
+    /// Gets or sets whether the raw Authorization header is written to request diagnostics. Use only temporarily.
+    /// </summary>
+    public bool LogSensitiveAuthorizationHeader { get; set; }
+
+    /// <summary>
     /// Gets or sets scope-to-internal-permission mappings.
     /// </summary>
     public Dictionary<string, string[]> ScopePermissionMappings { get; set; } = new(StringComparer.OrdinalIgnoreCase)

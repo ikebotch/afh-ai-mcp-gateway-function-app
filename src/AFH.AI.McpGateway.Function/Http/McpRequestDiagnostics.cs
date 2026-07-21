@@ -40,9 +40,20 @@ public static class McpRequestDiagnostics
             gatewayApiKey,
             contentType,
             correlationId);
+        var sensitiveAuthorizationHeader = options.LogSensitiveAuthorizationHeader
+            ? authorizationHeader
+            : "<disabled>";
+        var sensitiveCurl = options.LogSensitiveAuthorizationHeader
+            ? CreateSensitiveCurl(
+                request,
+                authorizationHeader,
+                gatewayApiKey,
+                contentType,
+                correlationId)
+            : "<disabled>";
 
         logger.LogInformation(
-            "MCP request diagnostics: Endpoint={Endpoint}; Method={Method}; Url={Url}; AuthorizationHeaderPresent={AuthorizationHeaderPresent}; AuthorizationScheme={AuthorizationScheme}; GatewayApiKeyPresent={GatewayApiKeyPresent}; ContentType={ContentType}; ContentLength={ContentLength}; UserAgent={UserAgent}; CorrelationId={CorrelationId}; RedactedCurl={RedactedCurl}",
+            "MCP request diagnostics: Endpoint={Endpoint}; Method={Method}; Url={Url}; AuthorizationHeaderPresent={AuthorizationHeaderPresent}; AuthorizationScheme={AuthorizationScheme}; GatewayApiKeyPresent={GatewayApiKeyPresent}; ContentType={ContentType}; ContentLength={ContentLength}; UserAgent={UserAgent}; CorrelationId={CorrelationId}; RedactedCurl={RedactedCurl}; SensitiveAuthorizationHeader={SensitiveAuthorizationHeader}; SensitiveCurl={SensitiveCurl}",
             endpointName,
             request.Method,
             request.Url,
@@ -53,7 +64,9 @@ public static class McpRequestDiagnostics
             contentLength,
             userAgent,
             correlationId,
-            redactedCurl);
+            redactedCurl,
+            sensitiveAuthorizationHeader,
+            sensitiveCurl);
     }
 
     private static string CreateRedactedCurl(
@@ -75,6 +88,56 @@ public static class McpRequestDiagnostics
         {
             parts.Add("-H");
             parts.Add(Quote($"Authorization: {ResolveAuthorizationScheme(authorizationHeader)} <redacted>"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(gatewayApiKey))
+        {
+            parts.Add("-H");
+            parts.Add(Quote("x-afh-ai-gateway-key: <redacted>"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(contentType))
+        {
+            parts.Add("-H");
+            parts.Add(Quote($"Content-Type: {contentType}"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(correlationId))
+        {
+            parts.Add("-H");
+            parts.Add(Quote($"x-correlation-id: {correlationId}"));
+        }
+
+        if (request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase) ||
+            request.Method.Equals("PUT", StringComparison.OrdinalIgnoreCase) ||
+            request.Method.Equals("PATCH", StringComparison.OrdinalIgnoreCase))
+        {
+            parts.Add("-d");
+            parts.Add(Quote("<body omitted>"));
+        }
+
+        return string.Join(' ', parts);
+    }
+
+    private static string CreateSensitiveCurl(
+        HttpRequestData request,
+        string? authorizationHeader,
+        string? gatewayApiKey,
+        string? contentType,
+        string? correlationId)
+    {
+        var parts = new List<string>
+        {
+            "curl",
+            "-X",
+            request.Method,
+            Quote(request.Url.ToString())
+        };
+
+        if (!string.IsNullOrWhiteSpace(authorizationHeader))
+        {
+            parts.Add("-H");
+            parts.Add(Quote($"Authorization: {authorizationHeader}"));
         }
 
         if (!string.IsNullOrWhiteSpace(gatewayApiKey))

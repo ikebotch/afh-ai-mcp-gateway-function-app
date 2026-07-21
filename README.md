@@ -85,6 +85,14 @@ Redacted request diagnostics, including a curl-style request shape with secrets 
 McpGateway__Authentication__LogRequestDiagnostics=true
 ```
 
+If you need to temporarily capture the raw Authorization header to inspect the exact access token sent by an agent, enable:
+
+```bash
+McpGateway__Authentication__LogSensitiveAuthorizationHeader=true
+```
+
+Only use this setting briefly, restrict log access while it is enabled, and turn it off immediately after debugging.
+
 Default scope mappings include:
 
 | Entra scope | Internal permissions |

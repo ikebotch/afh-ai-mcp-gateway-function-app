@@ -11,6 +11,7 @@
     "McpGateway__Authentication__Audience": "api://afh-ai-mcp-gateway",
     "McpGateway__Authentication__LogTokenDiagnostics": "false",
     "McpGateway__Authentication__LogRequestDiagnostics": "false",
+    "McpGateway__Authentication__LogSensitiveAuthorizationHeader": "false",
     "McpGateway__Audit__Provider": "TableStorage",
     "McpGateway__Audit__ConnectionString": "UseDevelopmentStorage=true",
     "McpGateway__Audit__TableName": "AiToolAudit",

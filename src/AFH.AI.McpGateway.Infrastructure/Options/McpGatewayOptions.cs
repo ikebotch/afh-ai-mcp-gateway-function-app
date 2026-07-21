@@ -96,6 +96,11 @@ public sealed class McpGatewayAuthenticationOptions
     public bool LogTokenDiagnostics { get; set; }
 
     /// <summary>
+    /// Gets or sets whether safe, redacted HTTP request diagnostics are written to logs.
+    /// </summary>
+    public bool LogRequestDiagnostics { get; set; }
+
+    /// <summary>
     /// Gets or sets scope-to-internal-permission mappings.
     /// </summary>
     public Dictionary<string, string[]> ScopePermissionMappings { get; set; } = new(StringComparer.OrdinalIgnoreCase)

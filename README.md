@@ -79,6 +79,12 @@ McpGateway__Authentication__LogTokenDiagnostics=true
 
 This writes safe decoded JWT claim details such as audience, issuer, scopes, roles, tenant ID, and client ID to Application Insights. Turn it off after debugging authentication.
 
+Redacted request diagnostics, including a curl-style request shape with secrets removed, can also be enabled:
+
+```bash
+McpGateway__Authentication__LogRequestDiagnostics=true
+```
+
 Default scope mappings include:
 
 | Entra scope | Internal permissions |

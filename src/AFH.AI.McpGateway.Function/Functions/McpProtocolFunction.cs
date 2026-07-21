@@ -3,11 +3,14 @@ using System.Text.Json;
 using AFH.AI.McpGateway.Application.Abstractions;
 using AFH.AI.McpGateway.Application.Services;
 using AFH.AI.McpGateway.Function.Http;
+using AFH.AI.McpGateway.Infrastructure.Options;
 using AFH.AI.McpGateway.Infrastructure.Security;
 using AFH.Common.AI.Tools;
 using AFH.Common.Mcp.Protocol;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AFH.AI.McpGateway.Function.Functions;
 
@@ -17,7 +20,9 @@ namespace AFH.AI.McpGateway.Function.Functions;
 public sealed class McpProtocolFunction(
     IToolRegistry toolRegistry,
     ToolInvocationService invocationService,
-    McpGatewayAuthenticator authenticator)
+    McpGatewayAuthenticator authenticator,
+    IOptions<McpGatewayOptions> options,
+    ILogger<McpProtocolFunction> logger)
 {
     private const string JsonRpcVersion = "2.0";
     private const string ProtocolVersion = "2025-06-18";
@@ -34,6 +39,12 @@ public sealed class McpProtocolFunction(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "mcp")] HttpRequestData request,
         CancellationToken cancellationToken)
     {
+        McpRequestDiagnostics.LogIfEnabled(
+            request,
+            options.Value.Authentication,
+            logger,
+            nameof(HandleMcp));
+
         McpJsonRpcRequest? rpcRequest;
         try
         {

@@ -1,10 +1,13 @@
 using System.Net;
 using AFH.AI.McpGateway.Application.Abstractions;
 using AFH.AI.McpGateway.Function.Http;
+using AFH.AI.McpGateway.Infrastructure.Options;
 using AFH.AI.McpGateway.Infrastructure.Security;
 using AFH.Common.Mcp.Protocol;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AFH.AI.McpGateway.Function.Functions;
 
@@ -13,7 +16,9 @@ namespace AFH.AI.McpGateway.Function.Functions;
 /// </summary>
 public sealed class McpToolsFunction(
     IToolRegistry toolRegistry,
-    McpGatewayAuthenticator authenticator)
+    McpGatewayAuthenticator authenticator,
+    IOptions<McpGatewayOptions> options,
+    ILogger<McpToolsFunction> logger)
 {
     /// <summary>
     /// Returns the registered Phase 1 tool list.
@@ -25,6 +30,12 @@ public sealed class McpToolsFunction(
         [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "mcp/v1/tools")] HttpRequestData request,
         CancellationToken cancellationToken)
     {
+        McpRequestDiagnostics.LogIfEnabled(
+            request,
+            options.Value.Authentication,
+            logger,
+            nameof(GetTools));
+
         var auth = await authenticator.AuthenticateAsync(
             CreateAuthenticationRequest(request),
             cancellationToken).ConfigureAwait(false);

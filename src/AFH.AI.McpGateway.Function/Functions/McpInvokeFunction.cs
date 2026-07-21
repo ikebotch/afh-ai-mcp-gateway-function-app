@@ -1,10 +1,13 @@
 using System.Net;
 using AFH.AI.McpGateway.Application.Services;
 using AFH.AI.McpGateway.Function.Http;
+using AFH.AI.McpGateway.Infrastructure.Options;
 using AFH.AI.McpGateway.Infrastructure.Security;
 using AFH.Common.Mcp.Protocol;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AFH.AI.McpGateway.Function.Functions;
 
@@ -13,7 +16,9 @@ namespace AFH.AI.McpGateway.Function.Functions;
 /// </summary>
 public sealed class McpInvokeFunction(
     ToolInvocationService invocationService,
-    McpGatewayAuthenticator authenticator)
+    McpGatewayAuthenticator authenticator,
+    IOptions<McpGatewayOptions> options,
+    ILogger<McpInvokeFunction> logger)
 {
     /// <summary>
     /// Invokes a named MCP tool.
@@ -28,6 +33,12 @@ public sealed class McpInvokeFunction(
         string toolName,
         CancellationToken cancellationToken)
     {
+        McpRequestDiagnostics.LogIfEnabled(
+            request,
+            options.Value.Authentication,
+            logger,
+            nameof(InvokeTool));
+
         var auth = await authenticator.AuthenticateAsync(
             CreateAuthenticationRequest(request),
             cancellationToken).ConfigureAwait(false);

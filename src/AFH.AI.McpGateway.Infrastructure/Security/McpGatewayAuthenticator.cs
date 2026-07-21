@@ -40,12 +40,14 @@ public sealed class McpGatewayAuthenticator(
         var token = ExtractBearerToken(request.AuthorizationHeader);
         if (string.IsNullOrWhiteSpace(token))
         {
+            LogMissingBearerDiagnostics(request, gatewayOptions.Authentication);
             return McpGatewayAuthenticationResult.Failure(
                 "unauthorized",
                 "A bearer access token is required.");
         }
 
         var auth = gatewayOptions.Authentication;
+        LogTokenDiagnostics(token, request, auth);
         if (string.IsNullOrWhiteSpace(auth.Audience))
         {
             logger.LogError("MCP Gateway authentication is enabled, but no audience is configured.");
@@ -88,7 +90,10 @@ public sealed class McpGatewayAuthenticator(
             {
                 logger.LogWarning(
                     validationResult.Exception,
-                    "MCP Gateway bearer token validation failed.");
+                    "MCP Gateway bearer token validation failed. ConfiguredAudience={ConfiguredAudience}; ConfiguredAuthority={ConfiguredAuthority}; CorrelationId={CorrelationId}",
+                    auth.Audience,
+                    authority,
+                    request.CorrelationId);
                 return McpGatewayAuthenticationResult.Failure(
                     "unauthorized",
                     "The bearer access token is invalid.");
@@ -99,7 +104,12 @@ public sealed class McpGatewayAuthenticator(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "MCP Gateway bearer token validation failed.");
+            logger.LogWarning(
+                ex,
+                "MCP Gateway bearer token validation failed. ConfiguredAudience={ConfiguredAudience}; ConfiguredAuthority={ConfiguredAuthority}; CorrelationId={CorrelationId}",
+                auth.Audience,
+                authority,
+                request.CorrelationId);
             return McpGatewayAuthenticationResult.Failure(
                 "unauthorized",
                 "The bearer access token could not be validated.");
@@ -199,6 +209,86 @@ public sealed class McpGatewayAuthenticator(
         }
 
         return authorizationHeader[bearerPrefix.Length..].Trim();
+    }
+
+    private void LogMissingBearerDiagnostics(
+        McpGatewayAuthenticationRequest request,
+        McpGatewayAuthenticationOptions auth)
+    {
+        if (!auth.LogTokenDiagnostics)
+        {
+            return;
+        }
+
+        logger.LogInformation(
+            "MCP token diagnostics: bearer token missing. AuthorizationHeaderPresent={AuthorizationHeaderPresent}; GatewayApiKeyPresent={GatewayApiKeyPresent}; ConfiguredAudience={ConfiguredAudience}; ConfiguredAuthority={ConfiguredAuthority}; CorrelationId={CorrelationId}",
+            !string.IsNullOrWhiteSpace(request.AuthorizationHeader),
+            !string.IsNullOrWhiteSpace(request.GatewayApiKey),
+            auth.Audience,
+            ResolveAuthority(auth),
+            request.CorrelationId);
+    }
+
+    private void LogTokenDiagnostics(
+        string token,
+        McpGatewayAuthenticationRequest request,
+        McpGatewayAuthenticationOptions auth)
+    {
+        if (!auth.LogTokenDiagnostics)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!_tokenHandler.CanReadToken(token))
+            {
+                logger.LogInformation(
+                    "MCP token diagnostics: bearer token is not a readable JWT. TokenLength={TokenLength}; ConfiguredAudience={ConfiguredAudience}; ConfiguredAuthority={ConfiguredAuthority}; CorrelationId={CorrelationId}",
+                    token.Length,
+                    auth.Audience,
+                    ResolveAuthority(auth),
+                    request.CorrelationId);
+                return;
+            }
+
+            var jwt = _tokenHandler.ReadJsonWebToken(token);
+            var scopes = string.Join(
+                ' ',
+                jwt.Claims
+                    .Where(claim => string.Equals(claim.Type, "scp", StringComparison.OrdinalIgnoreCase))
+                    .Select(claim => claim.Value));
+            var roles = string.Join(
+                ',',
+                jwt.Claims
+                    .Where(claim => string.Equals(claim.Type, "roles", StringComparison.OrdinalIgnoreCase) ||
+                                    string.Equals(claim.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase))
+                    .Select(claim => claim.Value));
+
+            logger.LogInformation(
+                "MCP token diagnostics: Audiences={Audiences}; Issuer={Issuer}; Scopes={Scopes}; Roles={Roles}; ClientId={ClientId}; TenantId={TenantId}; Subject={Subject}; ExpiresUtc={ExpiresUtc}; ConfiguredAudience={ConfiguredAudience}; ConfiguredAuthority={ConfiguredAuthority}; CorrelationId={CorrelationId}",
+                string.Join(',', jwt.Audiences),
+                jwt.Issuer,
+                scopes,
+                roles,
+                FirstClaim(jwt.Claims, "azp", "appid", "client_id"),
+                FirstClaim(jwt.Claims, "tid", "tenant_id"),
+                FirstClaim(jwt.Claims, "oid", "sub", ClaimTypes.NameIdentifier),
+                jwt.ValidTo,
+                auth.Audience,
+                ResolveAuthority(auth),
+                request.CorrelationId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogInformation(
+                ex,
+                "MCP token diagnostics could not decode bearer token. TokenLength={TokenLength}; ConfiguredAudience={ConfiguredAudience}; ConfiguredAuthority={ConfiguredAuthority}; CorrelationId={CorrelationId}",
+                token.Length,
+                auth.Audience,
+                ResolveAuthority(auth),
+                request.CorrelationId);
+        }
     }
 
     private static void AddClaimsAndMappedPermissions(

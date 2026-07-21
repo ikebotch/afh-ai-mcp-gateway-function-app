@@ -9,6 +9,7 @@
     "McpGateway__Authentication__Enabled": "false",
     "McpGateway__Authentication__TenantId": "",
     "McpGateway__Authentication__Audience": "api://afh-ai-mcp-gateway",
+    "McpGateway__Authentication__LogTokenDiagnostics": "false",
     "McpGateway__Audit__Provider": "TableStorage",
     "McpGateway__Audit__ConnectionString": "UseDevelopmentStorage=true",
     "McpGateway__Audit__TableName": "AiToolAudit",

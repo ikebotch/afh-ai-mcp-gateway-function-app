@@ -71,6 +71,14 @@ McpGateway__Authentication__TenantId=<tenant-id>
 McpGateway__Authentication__Audience=api://afh-ai-mcp-gateway
 ```
 
+Temporary token diagnostics can be enabled without logging the bearer token value:
+
+```bash
+McpGateway__Authentication__LogTokenDiagnostics=true
+```
+
+This writes safe decoded JWT claim details such as audience, issuer, scopes, roles, tenant ID, and client ID to Application Insights. Turn it off after debugging authentication.
+
 Default scope mappings include:
 
 | Entra scope | Internal permissions |

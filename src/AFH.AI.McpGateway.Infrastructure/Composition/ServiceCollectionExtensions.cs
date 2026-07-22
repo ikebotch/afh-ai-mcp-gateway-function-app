@@ -35,8 +35,11 @@ public static class ServiceCollectionExtensions
             var gatewayOptions = provider
                 .GetRequiredService<Microsoft.Extensions.Options.IOptions<McpGatewayOptions>>()
                 .Value;
+            var auditProvider = string.IsNullOrWhiteSpace(gatewayOptions.Audit.Provider)
+                ? "Logging"
+                : gatewayOptions.Audit.Provider;
 
-            return gatewayOptions.Audit.Provider.Equals("TableStorage", StringComparison.OrdinalIgnoreCase)
+            return auditProvider.Equals("TableStorage", StringComparison.OrdinalIgnoreCase)
                 ? ActivatorUtilities.CreateInstance<TableStorageAiAuditSink>(provider)
                 : ActivatorUtilities.CreateInstance<LoggingAiAuditSink>(provider);
         });

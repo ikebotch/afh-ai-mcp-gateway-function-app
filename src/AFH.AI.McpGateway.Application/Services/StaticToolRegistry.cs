@@ -11,6 +11,53 @@ public sealed class StaticToolRegistry : IToolRegistry
     private static readonly IReadOnlyCollection<AiToolDescriptor> Tools =
     [
         new(
+            "booking.get_my_bookings",
+            "Booking",
+            "Searches bookings visible to the signed-in user, using the Booking service access scope.",
+            AiToolSideEffectLevel.ReadOnly,
+            ["booking.read"],
+            new("GET", "/v1/admin/bookings", "Services:Booking:BaseUrl"),
+            [
+                new("search", "string", false, "Optional free-text search across reference, client, adviser, meeting type and location fields."),
+                new("status", "string", false, "Optional booking status filter: Active, Confirmed, Released, Cancelled or Expired."),
+                new("from", "string", false, "Optional UTC lower bound for booking start, for example 2026-07-22T00:00:00Z."),
+                new("to", "string", false, "Optional UTC upper bound for booking start, for example 2026-07-29T23:59:59Z."),
+                new("page", "integer", false, "Optional 1-based page number. Defaults to 1."),
+                new("pageSize", "integer", false, "Optional page size from 1 to 100. Defaults to 25.")
+            ]),
+        new(
+            "booking.search",
+            "Booking",
+            "Searches bookings with filters. Results remain limited by the signed-in user's Booking service permissions.",
+            AiToolSideEffectLevel.ReadOnly,
+            ["booking.read"],
+            new("GET", "/v1/admin/bookings", "Services:Booking:BaseUrl"),
+            [
+                new("search", "string", false, "Optional free-text search across reference, client, adviser, meeting type and location fields."),
+                new("bookingId", "string", false, "Optional booking identifier filter."),
+                new("transactionId", "string", false, "Optional booking transaction identifier filter."),
+                new("transactionRef", "string", false, "Optional external transaction or client reference filter."),
+                new("status", "string", false, "Optional booking status filter: Active, Confirmed, Released, Cancelled or Expired."),
+                new("adviserId", "string", false, "Optional adviser identifier filter."),
+                new("adviserName", "string", false, "Optional adviser name filter."),
+                new("clientRef", "string", false, "Optional client reference filter."),
+                new("locationRef", "string", false, "Optional location reference filter."),
+                new("meetingType", "string", false, "Optional meeting type filter."),
+                new("mode", "string", false, "Optional booking mode filter: Online, InPerson or Phone."),
+                new("from", "string", false, "Optional UTC lower bound for booking start, for example 2026-07-22T00:00:00Z."),
+                new("to", "string", false, "Optional UTC upper bound for booking start, for example 2026-07-29T23:59:59Z."),
+                new("page", "integer", false, "Optional 1-based page number. Defaults to 1."),
+                new("pageSize", "integer", false, "Optional page size from 1 to 100. Defaults to 25.")
+            ]),
+        new(
+            "booking.get_details",
+            "Booking",
+            "Reads booking details for a single booking.",
+            AiToolSideEffectLevel.ReadOnly,
+            ["booking.read"],
+            new("GET", "/v1/bookings/{bookingId}", "Services:Booking:BaseUrl"),
+            [new("bookingId", "string", true, "The booking identifier.")]),
+        new(
             "booking.get_lifecycle",
             "Booking",
             "Reads the lifecycle state and audit history for a booking.",

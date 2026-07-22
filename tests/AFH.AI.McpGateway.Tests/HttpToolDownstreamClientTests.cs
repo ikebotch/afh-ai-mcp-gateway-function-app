@@ -115,6 +115,74 @@ public sealed class HttpToolDownstreamClientTests
         Assert.True(result.Content.GetProperty("dryRun").GetBoolean());
     }
 
+    [Fact]
+    public async Task InvokeAsync_ForBookingSearchRealTool_AppendsFiltersAsQueryString()
+    {
+        var registry = new StaticToolRegistry();
+        Assert.True(registry.TryGetTool("booking.search", out var tool));
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"items":[],"page":1,"pageSize":25,"totalItems":0,"totalPages":0}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(
+            handler,
+            new Dictionary<string, string?>
+            {
+                ["Services:Booking:BaseUrl"] = "http://booking-service.test/api"
+            },
+            new McpGatewayOptions
+            {
+                DryRunDownstreamCalls = true,
+                RealDownstreamTools = ["booking.search"]
+            });
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["booking.read"], "Bearer delegated-token");
+        var arguments = JsonSerializer.SerializeToElement(new
+        {
+            status = "Confirmed",
+            from = "2026-07-22T00:00:00Z",
+            to = "2026-07-29T23:59:59Z",
+            pageSize = 10
+        });
+
+        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.Equal(
+            "http://booking-service.test/api/v1/admin/bookings?status=Confirmed&from=2026-07-22T00%3A00%3A00Z&to=2026-07-29T23%3A59%3A59Z&pageSize=10",
+            handler.Request!.RequestUri!.ToString());
+        Assert.Equal(HttpMethod.Get, handler.Request.Method);
+        Assert.Equal("Bearer delegated-token", handler.Request.Headers.Authorization?.ToString());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_ForBookingDetailsRealTool_DoesNotAppendPathParameterAsQueryString()
+    {
+        var registry = new StaticToolRegistry();
+        Assert.True(registry.TryGetTool("booking.get_details", out var tool));
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"bookingId":"booking-1"}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(
+            handler,
+            new Dictionary<string, string?>
+            {
+                ["Services:Booking:BaseUrl"] = "http://booking-service.test/api"
+            },
+            new McpGatewayOptions
+            {
+                DryRunDownstreamCalls = true,
+                RealDownstreamTools = ["booking.get_details"]
+            });
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["booking.read"]);
+        var arguments = JsonSerializer.SerializeToElement(new { bookingId = "booking-1" });
+
+        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.Equal("http://booking-service.test/api/v1/bookings/booking-1", handler.Request!.RequestUri!.ToString());
+    }
+
     private static HttpToolDownstreamClient CreateClient(
         HttpMessageHandler handler,
         IReadOnlyDictionary<string, string?> configurationValues,

@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using AFH.AI.McpGateway.Application.Abstractions;
 using AFH.AI.McpGateway.Application.Models;
 using AFH.AI.McpGateway.Infrastructure.Options;
@@ -18,6 +19,8 @@ public sealed class HttpToolDownstreamClient(
     IConfiguration configuration,
     IOptions<McpGatewayOptions> options) : IToolDownstreamClient
 {
+    private static readonly Regex RouteParameterPattern = new(@"\{(?<name>[^}]+)\}", RegexOptions.Compiled);
+
     /// <inheritdoc />
     public async Task<ToolDownstreamResult> InvokeAsync(
         AiToolDescriptor tool,
@@ -105,6 +108,11 @@ public sealed class HttpToolDownstreamClient(
         }
 
         var route = tool.Endpoint.RouteTemplate;
+        var pathParameterNames = RouteParameterPattern
+            .Matches(route)
+            .Select(match => match.Groups["name"].Value)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         foreach (var parameter in tool.Parameters)
         {
             if (arguments.ValueKind == JsonValueKind.Object &&
@@ -115,6 +123,66 @@ public sealed class HttpToolDownstreamClient(
             }
         }
 
-        return new Uri(new Uri(baseUrl.TrimEnd('/') + "/"), route.TrimStart('/')).ToString();
+        var target = new Uri(new Uri(baseUrl.TrimEnd('/') + "/"), route.TrimStart('/'));
+        if (!string.Equals(tool.Endpoint.Method, "GET", StringComparison.OrdinalIgnoreCase) ||
+            arguments.ValueKind != JsonValueKind.Object)
+        {
+            return target.ToString();
+        }
+
+        var query = BuildQueryString(arguments, pathParameterNames);
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return target.ToString();
+        }
+
+        var separator = string.IsNullOrEmpty(target.Query) ? "?" : "&";
+        return target + separator + query;
+    }
+
+    private static string BuildQueryString(JsonElement arguments, ISet<string> excludedParameterNames)
+    {
+        var parts = new List<string>();
+        foreach (var property in arguments.EnumerateObject())
+        {
+            if (excludedParameterNames.Contains(property.Name) ||
+                property.Value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined or JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            if (property.Value.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in property.Value.EnumerateArray())
+                {
+                    AddQueryValue(parts, property.Name, item);
+                }
+
+                continue;
+            }
+
+            AddQueryValue(parts, property.Name, property.Value);
+        }
+
+        return string.Join("&", parts);
+    }
+
+    private static void AddQueryValue(ICollection<string> parts, string name, JsonElement value)
+    {
+        var stringValue = value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Number => value.ToString(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(stringValue))
+        {
+            return;
+        }
+
+        parts.Add($"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(stringValue)}");
     }
 }

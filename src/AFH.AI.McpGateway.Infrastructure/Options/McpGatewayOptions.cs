@@ -26,7 +26,14 @@ public sealed class McpGatewayOptions
     /// <summary>
     /// Gets or sets tools that should call real downstream services even when global dry-run is enabled.
     /// </summary>
-    public string[] RealDownstreamTools { get; set; } = [];
+    public string[] RealDownstreamTools { get; set; } =
+    [
+        "booking.get_lifecycle",
+        "booking.find_availability",
+        "booking.get_my_bookings",
+        "booking.search",
+        "booking.get_details"
+    ];
 
     /// <summary>
     /// Gets or sets the internal API key forwarded to downstream AFH services.

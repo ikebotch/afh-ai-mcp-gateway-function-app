@@ -38,6 +38,9 @@ The JSON-RPC MCP endpoint supports:
 
 | Tool | Owner | Downstream route |
 | --- | --- | --- |
+| `booking.get_my_bookings` | Booking | `GET /v1/admin/bookings` |
+| `booking.search` | Booking | `GET /v1/admin/bookings` |
+| `booking.get_details` | Booking | `GET /v1/bookings/{bookingId}` |
 | `booking.get_lifecycle` | Booking | `GET /v1/bookings/{bookingId}/lifecycle` |
 | `booking.find_availability` | Booking | `POST /v2/transactions/{transactionId}/availability` |
 | `calendar.get_schedule` | Calendar | `GET /v1/calendar/users/{userId}/schedule` |
@@ -107,7 +110,17 @@ Default scope mappings include:
 
 `McpGateway__DryRunDownstreamCalls` defaults to `true` in `local.settings.template.json`. In dry-run mode the gateway returns the downstream target it would call without invoking the service.
 
-`booking.get_lifecycle` is the first real downstream tool and is listed under `McpGateway__RealDownstreamTools`. It calls the Booking service route `GET /v1/bookings/{bookingId}/lifecycle` when `Services__Booking__BaseUrl` points at a running Booking Function app.
+The safe Booking read tools are real downstream tools by default, even while global dry-run remains enabled:
+
+```bash
+booking.get_lifecycle
+booking.find_availability
+booking.get_my_bookings
+booking.search
+booking.get_details
+```
+
+Other tools stay in dry-run mode unless explicitly listed under `McpGateway__RealDownstreamTools`.
 
 ## Audit
 

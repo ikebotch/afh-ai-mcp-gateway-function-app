@@ -19,7 +19,11 @@ var host = new HostBuilder()
     })
     .ConfigureServices((ctx, services) =>
     {
-        services.AddApplicationInsightsTelemetryWorkerService();
+        if (HasApplicationInsightsConfiguration(ctx.Configuration))
+        {
+            services.AddApplicationInsightsTelemetryWorkerService();
+        }
+
         services.AddMcpGatewayApplication();
         services.AddMcpGatewayInfrastructure(ctx.Configuration);
         services.Configure<WorkerOptions>(options =>
@@ -36,6 +40,12 @@ var host = new HostBuilder()
     .Build();
 
 host.Run();
+
+static bool HasApplicationInsightsConfiguration(IConfiguration configuration)
+{
+    return !string.IsNullOrWhiteSpace(configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]) ||
+        !string.IsNullOrWhiteSpace(configuration["APPINSIGHTS_INSTRUMENTATIONKEY"]);
+}
 
 static void AddFlattenedValuesSection(IConfigurationBuilder cfg)
 {

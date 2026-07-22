@@ -39,6 +39,60 @@ public sealed class HttpToolDownstreamClientTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenServiceBaseUrlHasNoPath_AddsAzureFunctionsApiPrefix()
+    {
+        var registry = new StaticToolRegistry();
+        Assert.True(registry.TryGetTool("booking.get_my_bookings", out var tool));
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"items":[]}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(
+            handler,
+            new Dictionary<string, string?>
+            {
+                ["Services:Booking:BaseUrl"] = "https://booking-service-dev.azurewebsites.net"
+            },
+            new McpGatewayOptions());
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["booking.read"]);
+        var arguments = JsonSerializer.SerializeToElement(new { pageSize = 10 });
+
+        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.Equal(
+            "https://booking-service-dev.azurewebsites.net/api/v1/admin/bookings?pageSize=10",
+            handler.Request!.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenServiceBaseUrlAlreadyHasApiPath_DoesNotDuplicateApiPrefix()
+    {
+        var registry = new StaticToolRegistry();
+        Assert.True(registry.TryGetTool("booking.get_my_bookings", out var tool));
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"items":[]}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(
+            handler,
+            new Dictionary<string, string?>
+            {
+                ["Services:Booking:BaseUrl"] = "https://booking-service-dev.azurewebsites.net/api"
+            },
+            new McpGatewayOptions());
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["booking.read"]);
+        var arguments = JsonSerializer.SerializeToElement(new { pageSize = 10 });
+
+        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.Equal(
+            "https://booking-service-dev.azurewebsites.net/api/v1/admin/bookings?pageSize=10",
+            handler.Request!.RequestUri!.ToString());
+    }
+
+    [Fact]
     public async Task InvokeAsync_ForBookingLifecycleRealTool_CallsRealBookingEndpoint()
     {
         var registry = new StaticToolRegistry();

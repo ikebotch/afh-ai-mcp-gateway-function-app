@@ -123,7 +123,7 @@ public sealed class HttpToolDownstreamClient(
             }
         }
 
-        var target = new Uri(new Uri(baseUrl.TrimEnd('/') + "/"), route.TrimStart('/'));
+        var target = new Uri(CreateServiceBaseUri(baseUrl), route.TrimStart('/'));
         if (!string.Equals(tool.Endpoint.Method, "GET", StringComparison.OrdinalIgnoreCase) ||
             arguments.ValueKind != JsonValueKind.Object)
         {
@@ -138,6 +138,17 @@ public sealed class HttpToolDownstreamClient(
 
         var separator = string.IsNullOrEmpty(target.Query) ? "?" : "&";
         return target + separator + query;
+    }
+
+    private static Uri CreateServiceBaseUri(string baseUrl)
+    {
+        var uri = new Uri(baseUrl.TrimEnd('/') + "/");
+        if (!string.IsNullOrWhiteSpace(uri.AbsolutePath.Trim('/')))
+        {
+            return uri;
+        }
+
+        return new Uri(uri, "api/");
     }
 
     private static string BuildQueryString(JsonElement arguments, ISet<string> excludedParameterNames)

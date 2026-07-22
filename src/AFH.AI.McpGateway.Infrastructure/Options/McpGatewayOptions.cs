@@ -28,6 +28,13 @@ public sealed class McpGatewayOptions
     /// </summary>
     public string[] RealDownstreamTools { get; set; } =
     [
+        "aum.get_my_adviser_profile",
+        "aum.get_my_team_advisers",
+        "aum.get_my_clients",
+        "aum.get_my_policies",
+        "aum.get_my_aum_summary",
+        "aum.find_my_high_value_clients",
+        "aum.find_my_clients_missing_annual_review",
         "booking.get_lifecycle",
         "booking.find_availability",
         "booking.get_my_bookings",
@@ -125,9 +132,10 @@ public sealed class McpGatewayAuthenticationOptions
         ["mcp.tools.notification.write"] = ["ai.write", "notification.write"],
         ["mcp.tools.location.read"] = ["location.read"],
         ["mcp.tools.client.read"] = ["client.read"],
+        ["mcp.tools.aum.read"] = ["aum.read"],
         ["mcp.tools.devops.read"] = ["devops.sprints.read"],
         ["mcp.tools.devops.write"] = ["ai.write", "devops.workitems.write"],
-        ["access_as_user"] = ["ai.read", "booking.read", "availability.read"]
+        ["access_as_user"] = ["ai.read", "booking.read", "availability.read", "aum.read"]
     };
 
     /// <summary>

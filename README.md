@@ -38,6 +38,13 @@ The JSON-RPC MCP endpoint supports:
 
 | Tool | Owner | Downstream route |
 | --- | --- | --- |
+| `aum.get_my_adviser_profile` | Adviser Insights | `GET /v1/me/adviser` |
+| `aum.get_my_team_advisers` | Adviser Insights | `GET /v1/me/team/advisers` |
+| `aum.get_my_clients` | Adviser Insights | `GET /v1/me/clients` |
+| `aum.get_my_policies` | Adviser Insights | `GET /v1/me/policies` |
+| `aum.get_my_aum_summary` | Adviser Insights | `GET /v1/me/aum-summary` |
+| `aum.find_my_high_value_clients` | Adviser Insights | `GET /v1/me/clients/highest-policy-value` |
+| `aum.find_my_clients_missing_annual_review` | Adviser Insights | `GET /v1/me/clients/missing-annual-review` |
 | `booking.get_my_bookings` | Booking | `GET /v1/admin/bookings` |
 | `booking.search` | Booking | `GET /v1/admin/bookings` |
 | `booking.get_details` | Booking | `GET /v1/bookings/{bookingId}` |
@@ -103,6 +110,7 @@ Default scope mappings include:
 | `mcp.tools.read` | `ai.read` |
 | `mcp.tools.write` | `ai.write` |
 | `mcp.tools.booking.read` | `booking.read`, `availability.read` |
+| `mcp.tools.aum.read` | `aum.read` |
 | `mcp.tools.devops.read` | `devops.sprints.read` |
 | `mcp.tools.devops.write` | `ai.write`, `devops.workitems.write` |
 
@@ -110,9 +118,16 @@ Default scope mappings include:
 
 `McpGateway__DryRunDownstreamCalls` defaults to `true` in `local.settings.template.json`. In dry-run mode the gateway returns the downstream target it would call without invoking the service.
 
-The safe Booking read tools are real downstream tools by default, even while global dry-run remains enabled:
+The safe AUM and Booking read tools are real downstream tools by default, even while global dry-run remains enabled:
 
 ```bash
+aum.get_my_adviser_profile
+aum.get_my_team_advisers
+aum.get_my_clients
+aum.get_my_policies
+aum.get_my_aum_summary
+aum.find_my_high_value_clients
+aum.find_my_clients_missing_annual_review
 booking.get_lifecycle
 booking.find_availability
 booking.get_my_bookings

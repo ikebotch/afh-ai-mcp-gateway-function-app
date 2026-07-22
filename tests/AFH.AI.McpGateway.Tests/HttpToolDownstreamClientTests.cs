@@ -13,6 +13,33 @@ namespace AFH.AI.McpGateway.Tests;
 public sealed class HttpToolDownstreamClientTests
 {
     [Fact]
+    public async Task InvokeAsync_ForDefaultRealAumTool_CallsAdviserInsightsEndpoint()
+    {
+        var registry = new StaticToolRegistry();
+        Assert.True(registry.TryGetTool("aum.get_my_clients", out var tool));
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"success":true,"data":[]}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(
+            handler,
+            new Dictionary<string, string?>
+            {
+                ["Services:AdviserInsights:BaseUrl"] = "https://adviser-insights.test"
+            },
+            new McpGatewayOptions());
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["aum.read"], "Bearer delegated-token");
+        var arguments = JsonSerializer.SerializeToElement(new { pageSize = 10 });
+
+        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.False(result.IsDryRun);
+        Assert.Equal("https://adviser-insights.test/api/v1/me/clients?pageSize=10", handler.Request!.RequestUri!.ToString());
+        Assert.Equal("Bearer delegated-token", handler.Request.Headers.Authorization?.ToString());
+    }
+
+    [Fact]
     public async Task InvokeAsync_ForDefaultRealBookingSearchTool_CallsRealBookingEndpoint()
     {
         var registry = new StaticToolRegistry();

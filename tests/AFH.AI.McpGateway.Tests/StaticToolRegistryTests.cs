@@ -34,4 +34,24 @@ public sealed class StaticToolRegistryTests
         Assert.Contains(search.Parameters, parameter => parameter.Name == "adviserId" && !parameter.Required);
         Assert.Equal("/v1/bookings/{bookingId}", details.Endpoint.RouteTemplate);
     }
+
+    [Fact]
+    public void GetTools_ContainsAumPhaseOneTools()
+    {
+        var registry = new StaticToolRegistry();
+
+        var tools = registry.GetTools();
+        var clients = tools.Single(candidate => candidate.Name == "aum.get_my_clients");
+        var highValue = tools.Single(candidate => candidate.Name == "aum.find_my_high_value_clients");
+        var missingReview = tools.Single(candidate => candidate.Name == "aum.find_my_clients_missing_annual_review");
+
+        Assert.Equal("Adviser Insights", clients.OwnerService);
+        Assert.Equal("GET", clients.Endpoint.Method);
+        Assert.Equal("/v1/me/clients", clients.Endpoint.RouteTemplate);
+        Assert.Equal("Services:AdviserInsights:BaseUrl", clients.Endpoint.ServiceBaseUrlSetting);
+        Assert.Contains("aum.read", clients.RequiredPermissions);
+        Assert.Contains(clients.Parameters, parameter => parameter.Name == "pageSize" && !parameter.Required);
+        Assert.Equal("/v1/me/clients/highest-policy-value", highValue.Endpoint.RouteTemplate);
+        Assert.Equal("/v1/me/clients/missing-annual-review", missingReview.Endpoint.RouteTemplate);
+    }
 }

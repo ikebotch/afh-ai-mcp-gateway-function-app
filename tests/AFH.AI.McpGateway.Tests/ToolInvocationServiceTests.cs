@@ -155,11 +155,95 @@ public sealed class ToolInvocationServiceTests
                     entry.Outcome == "Failed" &&
                     entry.ExecutionMode == "Real" &&
                     entry.StatusCode == 500 &&
-                    entry.FailureReason == "Downstream returned HTTP 500."),
+                    entry.FailureReason == "Downstream returned HTTP 500. database unavailable"),
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var response = await service.InvokeAsync("booking.get_lifecycle", request, actor, CancellationToken.None);
+
+        Assert.Equal(500, response.StatusCode);
+        downstream.VerifyAll();
+        audit.VerifyAll();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenDownstreamReturnsErrorBody_AuditsFailureReasonWithErrorDetails()
+    {
+        var registry = new StaticToolRegistry();
+        var downstream = new Mock<IToolDownstreamClient>(MockBehavior.Strict);
+        var audit = new Mock<IAiAuditSink>(MockBehavior.Strict);
+        var service = new ToolInvocationService(registry, downstream.Object, audit.Object);
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["booking.read"]);
+        var arguments = JsonSerializer.SerializeToElement(new { pageSize = 10 });
+        var request = new McpToolInvocationRequest(arguments, null);
+
+        downstream
+            .Setup(client => client.InvokeAsync(
+                It.Is<AiToolDescriptor>(tool => tool.Name == "booking.get_my_bookings"),
+                arguments,
+                actor,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ToolDownstreamResult(
+                401,
+                JsonSerializer.SerializeToElement(new
+                {
+                    code = "Unauthorized",
+                    message = "Authenticated domain user identity is required."
+                }),
+                "http://localhost:7071/api/v1/admin/bookings?pageSize=10",
+                false));
+
+        audit
+            .Setup(sink => sink.WriteAsync(
+                It.Is<AiAuditEvent>(entry =>
+                    entry.ToolName == "booking.get_my_bookings" &&
+                    entry.Outcome == "Failed" &&
+                    entry.StatusCode == 401 &&
+                    entry.FailureReason == "Downstream returned HTTP 401. Unauthorized: Authenticated domain user identity is required."),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await service.InvokeAsync("booking.get_my_bookings", request, actor, CancellationToken.None);
+
+        Assert.Equal(401, response.StatusCode);
+        downstream.VerifyAll();
+        audit.VerifyAll();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenDownstreamErrorBodyIsLong_TruncatesFailureReason()
+    {
+        var registry = new StaticToolRegistry();
+        var downstream = new Mock<IToolDownstreamClient>(MockBehavior.Strict);
+        var audit = new Mock<IAiAuditSink>(MockBehavior.Strict);
+        var service = new ToolInvocationService(registry, downstream.Object, audit.Object);
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["booking.read"]);
+        var arguments = JsonSerializer.SerializeToElement(new { pageSize = 10 });
+        var request = new McpToolInvocationRequest(arguments, null);
+
+        downstream
+            .Setup(client => client.InvokeAsync(
+                It.Is<AiToolDescriptor>(tool => tool.Name == "booking.get_my_bookings"),
+                arguments,
+                actor,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ToolDownstreamResult(
+                500,
+                JsonSerializer.SerializeToElement(new { message = new string('x', 3000) }),
+                "http://localhost:7071/api/v1/admin/bookings?pageSize=10",
+                false));
+
+        audit
+            .Setup(sink => sink.WriteAsync(
+                It.Is<AiAuditEvent>(entry =>
+                    entry.ToolName == "booking.get_my_bookings" &&
+                    entry.FailureReason != null &&
+                    entry.FailureReason.Length == 2048 &&
+                    entry.FailureReason.StartsWith("Downstream returned HTTP 500. ", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await service.InvokeAsync("booking.get_my_bookings", request, actor, CancellationToken.None);
 
         Assert.Equal(500, response.StatusCode);
         downstream.VerifyAll();

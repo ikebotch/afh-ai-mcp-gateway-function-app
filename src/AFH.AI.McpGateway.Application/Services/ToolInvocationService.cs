@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using AFH.AI.McpGateway.Application.Abstractions;
+using AFH.AI.McpGateway.Application.Models;
 using AFH.Common.AI.Actor;
 using AFH.Common.AI.Audit;
 using AFH.Common.AI.Tools;
@@ -16,6 +17,8 @@ public sealed class ToolInvocationService(
     IToolDownstreamClient downstreamClient,
     IAiAuditSink auditSink)
 {
+    private const int MaxFailureReasonLength = 2048;
+
     /// <summary>
     /// Invokes a registered tool.
     /// </summary>
@@ -41,6 +44,8 @@ public sealed class ToolInvocationService(
         var result = await downstreamClient.InvokeAsync(tool, request.Arguments, actor, cancellationToken).ConfigureAwait(false);
         stopwatch.Stop();
 
+        var failureReason = CreateFailureReason(result);
+
         await auditSink.WriteAsync(
             new AiAuditEvent(
                 Guid.NewGuid().ToString("N"),
@@ -55,11 +60,80 @@ public sealed class ToolInvocationService(
                 result.IsDryRun ? "DryRun" : "Real",
                 result.StatusCode,
                 stopwatch.ElapsedMilliseconds,
-                result.StatusCode is >= 200 and < 400 ? null : $"Downstream returned HTTP {result.StatusCode}."),
+                failureReason),
             cancellationToken).ConfigureAwait(false);
 
         return new McpToolInvocationResponse(tool.Name, actor.CorrelationId, result.StatusCode, result.Content);
     }
+
+    private static string? CreateFailureReason(ToolDownstreamResult result)
+    {
+        if (result.StatusCode is >= 200 and < 400)
+        {
+            return null;
+        }
+
+        var reason = $"Downstream returned HTTP {result.StatusCode}.";
+        var details = ExtractErrorDetails(result.Content);
+        if (!string.IsNullOrWhiteSpace(details))
+        {
+            reason = $"{reason} {details}";
+        }
+
+        return Truncate(reason, MaxFailureReasonLength);
+    }
+
+    private static string? ExtractErrorDetails(JsonElement content)
+    {
+        if (content.ValueKind == JsonValueKind.Object)
+        {
+            var message = FirstStringProperty(
+                content,
+                "message",
+                "error",
+                "detail",
+                "title",
+                "error_description",
+                "failureReason");
+
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                var code = FirstStringProperty(content, "code", "errorCode", "type");
+                return string.IsNullOrWhiteSpace(code)
+                    ? message
+                    : $"{code}: {message}";
+            }
+        }
+
+        if (content.ValueKind == JsonValueKind.String)
+        {
+            return content.GetString();
+        }
+
+        if (content.ValueKind is JsonValueKind.Array or JsonValueKind.Object)
+        {
+            return content.GetRawText();
+        }
+
+        return null;
+    }
+
+    private static string? FirstStringProperty(JsonElement content, params string[] propertyNames)
+    {
+        foreach (var propertyName in propertyNames)
+        {
+            if (content.TryGetProperty(propertyName, out var property) &&
+                property.ValueKind == JsonValueKind.String)
+            {
+                return property.GetString();
+            }
+        }
+
+        return null;
+    }
+
+    private static string Truncate(string value, int maxLength)
+        => value.Length <= maxLength ? value : value[..maxLength];
 
     private static void EnsureAuthorized(AiToolDescriptor tool, AiActorContext actor)
     {

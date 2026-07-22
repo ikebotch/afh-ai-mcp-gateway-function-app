@@ -119,7 +119,8 @@ public sealed class McpGatewayAuthenticationOptions
         ["mcp.tools.location.read"] = ["location.read"],
         ["mcp.tools.client.read"] = ["client.read"],
         ["mcp.tools.devops.read"] = ["devops.sprints.read"],
-        ["mcp.tools.devops.write"] = ["ai.write", "devops.workitems.write"]
+        ["mcp.tools.devops.write"] = ["ai.write", "devops.workitems.write"],
+        ["access_as_user"] = ["ai.read", "booking.read", "availability.read"]
     };
 
     /// <summary>

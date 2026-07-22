@@ -78,7 +78,7 @@ public sealed class McpGatewayAuthenticator(
                         ValidateAudience = true,
                         ValidAudience = auth.Audience,
                         ValidateIssuer = true,
-                        ValidIssuer = configuration.Issuer,
+                        ValidIssuers = ResolveValidIssuers(auth, configuration.Issuer),
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKeys = configuration.SigningKeys,
                         ValidateLifetime = true,
@@ -197,6 +197,25 @@ public sealed class McpGatewayAuthenticator(
         return string.IsNullOrWhiteSpace(auth.TenantId)
             ? null
             : $"https://login.microsoftonline.com/{auth.TenantId}/v2.0";
+    }
+
+    private static string[] ResolveValidIssuers(
+        McpGatewayAuthenticationOptions auth,
+        string metadataIssuer)
+    {
+        var issuers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(metadataIssuer))
+        {
+            issuers.Add(metadataIssuer);
+        }
+
+        if (!string.IsNullOrWhiteSpace(auth.TenantId))
+        {
+            issuers.Add($"https://login.microsoftonline.com/{auth.TenantId}/v2.0");
+            issuers.Add($"https://sts.windows.net/{auth.TenantId}/");
+        }
+
+        return issuers.ToArray();
     }
 
     private static string? ExtractBearerToken(string? authorizationHeader)

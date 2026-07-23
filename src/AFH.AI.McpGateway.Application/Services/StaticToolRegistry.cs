@@ -8,6 +8,13 @@ namespace AFH.AI.McpGateway.Application.Services;
 /// </summary>
 public sealed class StaticToolRegistry : IToolRegistry
 {
+    private static readonly IReadOnlyList<AiToolParameterDescriptor> AdviserFilterParameters =
+    [
+        new("adviserName", "string", false, "Optional adviser name filter, for example Aaron or Daniel. Manager/all access is still enforced downstream."),
+        new("adviserEmail", "string", false, "Optional adviser email filter. Manager/all access is still enforced downstream."),
+        new("adviserId", "string", false, "Optional numeric adviser identifier filter. Manager/all access is still enforced downstream.")
+    ];
+
     private static readonly IReadOnlyCollection<AiToolDescriptor> Tools =
     [
         new(
@@ -17,7 +24,7 @@ public sealed class StaticToolRegistry : IToolRegistry
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
             new("GET", "/v1/me/adviser", "Services:AdviserInsights:BaseUrl"),
-            []),
+            AdviserFilterParameters),
         new(
             "aum.get_my_team_advisers",
             "Adviser Insights",
@@ -25,7 +32,7 @@ public sealed class StaticToolRegistry : IToolRegistry
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
             new("GET", "/v1/me/team/advisers", "Services:AdviserInsights:BaseUrl"),
-            []),
+            AdviserFilterParameters),
         new(
             "aum.get_my_clients",
             "Adviser Insights",
@@ -33,7 +40,12 @@ public sealed class StaticToolRegistry : IToolRegistry
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
             new("GET", "/v1/me/clients", "Services:AdviserInsights:BaseUrl"),
-            [new("pageSize", "integer", false, "The maximum number of clients to return.")]),
+            [
+                new("pageSize", "integer", false, "The maximum number of clients to return."),
+                new("adviserName", "string", false, "Optional adviser name filter, for example Aaron or Daniel. Manager/all access is still enforced downstream."),
+                new("adviserEmail", "string", false, "Optional adviser email filter. Manager/all access is still enforced downstream."),
+                new("adviserId", "string", false, "Optional numeric adviser identifier filter. Manager/all access is still enforced downstream.")
+            ]),
         new(
             "aum.get_my_policies",
             "Adviser Insights",
@@ -41,7 +53,12 @@ public sealed class StaticToolRegistry : IToolRegistry
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
             new("GET", "/v1/me/policies", "Services:AdviserInsights:BaseUrl"),
-            [new("pageSize", "integer", false, "The maximum number of policies to return.")]),
+            [
+                new("pageSize", "integer", false, "The maximum number of policies to return."),
+                new("adviserName", "string", false, "Optional adviser name filter, for example Aaron or Daniel. Manager/all access is still enforced downstream."),
+                new("adviserEmail", "string", false, "Optional adviser email filter. Manager/all access is still enforced downstream."),
+                new("adviserId", "string", false, "Optional numeric adviser identifier filter. Manager/all access is still enforced downstream.")
+            ]),
         new(
             "aum.get_my_aum_summary",
             "Adviser Insights",
@@ -49,7 +66,7 @@ public sealed class StaticToolRegistry : IToolRegistry
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
             new("GET", "/v1/me/aum-summary", "Services:AdviserInsights:BaseUrl"),
-            []),
+            AdviserFilterParameters),
         new(
             "aum.find_my_high_value_clients",
             "Adviser Insights",
@@ -57,7 +74,12 @@ public sealed class StaticToolRegistry : IToolRegistry
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
             new("GET", "/v1/me/clients/highest-policy-value", "Services:AdviserInsights:BaseUrl"),
-            [new("pageSize", "integer", false, "The maximum number of clients to return.")]),
+            [
+                new("pageSize", "integer", false, "The maximum number of clients to return."),
+                new("adviserName", "string", false, "Optional adviser name filter, for example Aaron or Daniel. Manager/all access is still enforced downstream."),
+                new("adviserEmail", "string", false, "Optional adviser email filter. Manager/all access is still enforced downstream."),
+                new("adviserId", "string", false, "Optional numeric adviser identifier filter. Manager/all access is still enforced downstream.")
+            ]),
         new(
             "aum.find_my_clients_missing_annual_review",
             "Adviser Insights",
@@ -65,7 +87,12 @@ public sealed class StaticToolRegistry : IToolRegistry
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
             new("GET", "/v1/me/clients/missing-annual-review", "Services:AdviserInsights:BaseUrl"),
-            [new("pageSize", "integer", false, "The maximum number of clients to return.")]),
+            [
+                new("pageSize", "integer", false, "The maximum number of clients to return."),
+                new("adviserName", "string", false, "Optional adviser name filter, for example Aaron or Daniel. Manager/all access is still enforced downstream."),
+                new("adviserEmail", "string", false, "Optional adviser email filter. Manager/all access is still enforced downstream."),
+                new("adviserId", "string", false, "Optional numeric adviser identifier filter. Manager/all access is still enforced downstream.")
+            ]),
         new(
             "booking.get_my_bookings",
             "Booking",

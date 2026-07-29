@@ -18,6 +18,7 @@ public sealed class ToolInvocationService(
     IAiAuditSink auditSink)
 {
     private const int MaxFailureReasonLength = 2048;
+    private const int MaxAuditPayloadLength = 8192;
 
     /// <summary>
     /// Invokes a registered tool.
@@ -60,7 +61,10 @@ public sealed class ToolInvocationService(
                     "Blocked",
                     403,
                     stopwatch.ElapsedMilliseconds,
-                    Truncate(ex.Message, MaxFailureReasonLength)),
+                    Truncate(ex.Message, MaxFailureReasonLength),
+                    tool.Endpoint.Method,
+                    SerializePayload(request.Arguments),
+                    null),
                 cancellationToken).ConfigureAwait(false);
 
             throw;
@@ -85,7 +89,10 @@ public sealed class ToolInvocationService(
                 result.IsDryRun ? "DryRun" : "Real",
                 result.StatusCode,
                 stopwatch.ElapsedMilliseconds,
-                failureReason),
+                failureReason,
+                tool.Endpoint.Method,
+                SerializePayload(request.Arguments),
+                SerializePayload(result.Content)),
             cancellationToken).ConfigureAwait(false);
 
         return new McpToolInvocationResponse(tool.Name, actor.CorrelationId, result.StatusCode, result.Content);
@@ -159,6 +166,11 @@ public sealed class ToolInvocationService(
 
     private static string Truncate(string value, int maxLength)
         => value.Length <= maxLength ? value : value[..maxLength];
+
+    private static string? SerializePayload(JsonElement value)
+        => value.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null
+            ? null
+            : Truncate(value.GetRawText(), MaxAuditPayloadLength);
 
     private static void EnsureAuthorized(AiToolDescriptor tool, AiActorContext actor)
     {

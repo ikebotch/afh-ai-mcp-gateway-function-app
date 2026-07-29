@@ -86,6 +86,21 @@ public sealed class TableStorageAiAuditSink : IAiAuditSink
             entity["DownstreamTarget"] = auditEvent.DownstreamTarget;
         }
 
+        if (!string.IsNullOrWhiteSpace(auditEvent.DownstreamMethod))
+        {
+            entity["DownstreamMethod"] = auditEvent.DownstreamMethod;
+        }
+
+        if (!string.IsNullOrWhiteSpace(auditEvent.RequestPayload))
+        {
+            entity["RequestPayload"] = auditEvent.RequestPayload;
+        }
+
+        if (!string.IsNullOrWhiteSpace(auditEvent.ResponsePayload))
+        {
+            entity["ResponsePayload"] = auditEvent.ResponsePayload;
+        }
+
         if (auditEvent.StatusCode.HasValue)
         {
             entity["StatusCode"] = auditEvent.StatusCode.Value;

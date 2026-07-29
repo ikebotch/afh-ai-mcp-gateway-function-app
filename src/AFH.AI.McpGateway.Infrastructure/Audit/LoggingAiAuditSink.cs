@@ -13,7 +13,7 @@ public sealed class LoggingAiAuditSink(ILogger<LoggingAiAuditSink> logger) : IAi
     public Task WriteAsync(AiAuditEvent auditEvent, CancellationToken cancellationToken)
     {
         logger.LogInformation(
-            "AI tool audit {EventId} {ToolName} {Outcome} actor={ActorId} agent={AgentId} correlation={CorrelationId} service={DownstreamService} target={DownstreamTarget} mode={ExecutionMode} status={StatusCode} durationMs={DurationMs} failure={FailureReason}",
+            "AI tool audit {EventId} {ToolName} {Outcome} actor={ActorId} agent={AgentId} correlation={CorrelationId} service={DownstreamService} method={DownstreamMethod} target={DownstreamTarget} mode={ExecutionMode} status={StatusCode} durationMs={DurationMs} failure={FailureReason} request={RequestPayload} response={ResponsePayload}",
             auditEvent.EventId,
             auditEvent.ToolName,
             auditEvent.Outcome,
@@ -21,11 +21,14 @@ public sealed class LoggingAiAuditSink(ILogger<LoggingAiAuditSink> logger) : IAi
             auditEvent.AgentId,
             auditEvent.CorrelationId,
             auditEvent.DownstreamService,
+            auditEvent.DownstreamMethod,
             auditEvent.DownstreamTarget,
             auditEvent.ExecutionMode,
             auditEvent.StatusCode,
             auditEvent.DurationMs,
-            auditEvent.FailureReason);
+            auditEvent.FailureReason,
+            auditEvent.RequestPayload,
+            auditEvent.ResponsePayload);
 
         return Task.CompletedTask;
     }

@@ -21,7 +21,10 @@ public sealed class TableStorageAiAuditSinkTests
             "Real",
             200,
             123,
-            null);
+            null,
+            "GET",
+            """{"bookingId":"booking-1"}""",
+            """{"success":true}""");
 
         var entity = TableStorageAiAuditSink.ToEntity(auditEvent);
 
@@ -35,6 +38,9 @@ public sealed class TableStorageAiAuditSinkTests
         Assert.Equal("corr-1", entity["CorrelationId"]);
         Assert.Equal("Booking", entity["DownstreamService"]);
         Assert.Equal("http://localhost:7071/api/v1/bookings/booking-1/lifecycle", entity["DownstreamTarget"]);
+        Assert.Equal("GET", entity["DownstreamMethod"]);
+        Assert.Equal("""{"bookingId":"booking-1"}""", entity["RequestPayload"]);
+        Assert.Equal("""{"success":true}""", entity["ResponsePayload"]);
         Assert.Equal("Real", entity["ExecutionMode"]);
         Assert.Equal(200, entity["StatusCode"]);
         Assert.Equal(123L, entity["DurationMs"]);
@@ -57,12 +63,18 @@ public sealed class TableStorageAiAuditSinkTests
             "DryRun",
             500,
             42,
-            "Downstream returned HTTP 500.");
+            "Downstream returned HTTP 500.",
+            "POST",
+            """{"title":"Story"}""",
+            """{"dryRun":true}""");
 
         var entity = TableStorageAiAuditSink.ToEntity(auditEvent);
 
         Assert.Equal("20260706|DevOps Integration", entity.PartitionKey);
         Assert.Equal("DryRun", entity["ExecutionMode"]);
+        Assert.Equal("POST", entity["DownstreamMethod"]);
+        Assert.Equal("""{"title":"Story"}""", entity["RequestPayload"]);
+        Assert.Equal("""{"dryRun":true}""", entity["ResponsePayload"]);
         Assert.Equal("Downstream returned HTTP 500.", entity["FailureReason"]);
         Assert.False(entity.ContainsKey("DownstreamTarget"));
     }

@@ -22,12 +22,28 @@ public sealed class ToolInvocationServiceTests
         var actor = new AiActorContext("user-1", "codex", null, "corr-1", []);
         var request = new McpToolInvocationRequest(JsonSerializer.SerializeToElement(new { bookingId = "booking-1" }), null);
 
+        audit
+            .Setup(sink => sink.WriteAsync(
+                It.Is<AiAuditEvent>(entry =>
+                    entry.ToolName == "booking.get_lifecycle" &&
+                    entry.Outcome == "Failed" &&
+                    entry.DownstreamService == "Booking" &&
+                    entry.DownstreamTarget == null &&
+                    entry.ExecutionMode == "Blocked" &&
+                    entry.StatusCode == 403 &&
+                    entry.FailureReason == "Tool 'booking.get_lifecycle' requires permission 'booking.read'."),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             service.InvokeAsync("booking.get_lifecycle", request, actor, CancellationToken.None));
+
+        downstream.VerifyNoOtherCalls();
+        audit.VerifyAll();
     }
 
     [Fact]
-    public async Task InvokeAsync_WhenWriteToolWithoutAiWrite_ReturnsForbidden()
+    public async Task InvokeAsync_WhenWriteToolWithoutAiWrite_AuditsBlockedCall()
     {
         var registry = new StaticToolRegistry();
         var downstream = new Mock<IToolDownstreamClient>(MockBehavior.Strict);
@@ -36,8 +52,23 @@ public sealed class ToolInvocationServiceTests
         var actor = new AiActorContext("user-1", "codex", null, "corr-1", ["devops.workitems.write"]);
         var request = new McpToolInvocationRequest(JsonSerializer.SerializeToElement(new { title = "Story" }), null);
 
+        audit
+            .Setup(sink => sink.WriteAsync(
+                It.Is<AiAuditEvent>(entry =>
+                    entry.ToolName == "devops.create_user_story" &&
+                    entry.Outcome == "Failed" &&
+                    entry.DownstreamService == "DevOps Integration" &&
+                    entry.ExecutionMode == "Blocked" &&
+                    entry.StatusCode == 403 &&
+                    entry.FailureReason == "Tool 'devops.create_user_story' requires write access."),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             service.InvokeAsync("devops.create_user_story", request, actor, CancellationToken.None));
+
+        downstream.VerifyNoOtherCalls();
+        audit.VerifyAll();
     }
 
     [Fact]

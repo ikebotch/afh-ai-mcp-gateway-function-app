@@ -38,9 +38,34 @@ public sealed class ToolInvocationService(
             throw new InvalidOperationException($"Tool '{toolName}' is not registered.");
         }
 
-        EnsureAuthorized(tool, actor);
-
         var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            EnsureAuthorized(tool, actor);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            stopwatch.Stop();
+            await auditSink.WriteAsync(
+                new AiAuditEvent(
+                    Guid.NewGuid().ToString("N"),
+                    DateTimeOffset.UtcNow,
+                    actor.ActorId,
+                    actor.AgentId,
+                    tool.Name,
+                    "Failed",
+                    actor.CorrelationId,
+                    tool.OwnerService,
+                    null,
+                    "Blocked",
+                    403,
+                    stopwatch.ElapsedMilliseconds,
+                    Truncate(ex.Message, MaxFailureReasonLength)),
+                cancellationToken).ConfigureAwait(false);
+
+            throw;
+        }
+
         var result = await downstreamClient.InvokeAsync(tool, request.Arguments, actor, cancellationToken).ConfigureAwait(false);
         stopwatch.Stop();
 

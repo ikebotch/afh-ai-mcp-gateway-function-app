@@ -8,6 +8,17 @@ namespace AFH.AI.McpGateway.Tests;
 public sealed class McpGatewayAuthenticatorTests
 {
     [Fact]
+    public void DefaultScopeMappings_MapGenericReadScopeToSafeReadPermissions()
+    {
+        var mappings = new McpGatewayOptions().Authentication.ScopePermissionMappings;
+
+        Assert.Contains("ai.read", mappings["mcp.tools.read"]);
+        Assert.Contains("booking.read", mappings["mcp.tools.read"]);
+        Assert.Contains("availability.read", mappings["mcp.tools.read"]);
+        Assert.Contains("aum.read", mappings["mcp.tools.read"]);
+    }
+
+    [Fact]
     public async Task AuthenticateAsync_WhenBearerAuthDisabledAndApiKeyMatches_ReturnsLegacyActor()
     {
         var authenticator = CreateAuthenticator(new McpGatewayOptions

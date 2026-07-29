@@ -124,7 +124,17 @@ public sealed class McpGatewayAuthenticationOptions
     /// </summary>
     public Dictionary<string, string[]> ScopePermissionMappings { get; set; } = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["mcp.tools.read"] = ["ai.read"],
+        ["mcp.tools.read"] =
+        [
+            "ai.read",
+            "booking.read",
+            "availability.read",
+            "calendar.read",
+            "notification.read",
+            "location.read",
+            "client.read",
+            "aum.read"
+        ],
         ["mcp.tools.write"] = ["ai.write"],
         ["mcp.tools.booking.read"] = ["booking.read", "availability.read"],
         ["mcp.tools.calendar.read"] = ["calendar.read"],

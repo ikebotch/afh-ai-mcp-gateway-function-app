@@ -39,7 +39,8 @@ public sealed class McpGatewayOptions
         "booking.find_availability",
         "booking.get_my_bookings",
         "booking.search",
-        "booking.get_details"
+        "booking.get_details",
+        "snowflake.ask_agent"
     ];
 
     /// <summary>
@@ -51,6 +52,22 @@ public sealed class McpGatewayOptions
     /// Gets or sets durable audit configuration.
     /// </summary>
     public McpGatewayAuditOptions Audit { get; set; } = new();
+
+    /// <summary>
+    /// Gets or sets Snowflake Cortex agent downstream configuration.
+    /// </summary>
+    public McpGatewaySnowflakeAgentOptions SnowflakeAgent { get; set; } = new();
+}
+
+/// <summary>
+/// Configures calls to a Snowflake Cortex agent REST endpoint.
+/// </summary>
+public sealed class McpGatewaySnowflakeAgentOptions
+{
+    /// <summary>
+    /// Gets or sets the bearer token used when calling the Snowflake agent endpoint.
+    /// </summary>
+    public string? BearerToken { get; set; }
 }
 
 /// <summary>

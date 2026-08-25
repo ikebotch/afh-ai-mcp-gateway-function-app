@@ -16,7 +16,9 @@
     "McpGateway__RealDownstreamTools__9": "booking.get_my_bookings",
     "McpGateway__RealDownstreamTools__10": "booking.search",
     "McpGateway__RealDownstreamTools__11": "booking.get_details",
+    "McpGateway__RealDownstreamTools__12": "snowflake.ask_agent",
     "McpGateway__ApiKey": "",
+    "McpGateway__SnowflakeAgent__BearerToken": "<snowflake-agent-bearer-token>",
     "McpGateway__Authentication__Enabled": "false",
     "McpGateway__Authentication__TenantId": "",
     "McpGateway__Authentication__Audience": "api://afh-ai-mcp-gateway",
@@ -32,6 +34,7 @@
     "Services__Notification__BaseUrl": "http://localhost:7073",
     "Services__Location__BaseUrl": "http://localhost:7074",
     "Services__ClientIntegration__BaseUrl": "http://localhost:7075",
-    "Services__DevOps__BaseUrl": "http://localhost:7076"
+    "Services__DevOps__BaseUrl": "http://localhost:7076",
+    "Services__SnowflakeAgent__EndpointUrl": "https://JR56660-RU01452.snowflakecomputing.com/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/<agent-name>"
   }
 }

@@ -20,6 +20,7 @@ public sealed class HttpToolDownstreamClient(
     IOptions<McpGatewayOptions> options) : IToolDownstreamClient
 {
     private static readonly Regex RouteParameterPattern = new(@"\{(?<name>[^}]+)\}", RegexOptions.Compiled);
+    private const string SnowflakeAgentToolName = "snowflake.ask_agent";
 
     /// <inheritdoc />
     public async Task<ToolDownstreamResult> InvokeAsync(
@@ -64,7 +65,14 @@ public sealed class HttpToolDownstreamClient(
             message.Headers.TryAddWithoutValidation("x-afh-ai-approval-id", actor.ApprovalId);
         }
 
-        if (!string.IsNullOrWhiteSpace(actor.DelegatedAuthorizationHeader))
+        if (IsSnowflakeAgentTool(tool))
+        {
+            if (!string.IsNullOrWhiteSpace(options.Value.SnowflakeAgent.BearerToken))
+            {
+                message.Headers.TryAddWithoutValidation("Authorization", $"Bearer {options.Value.SnowflakeAgent.BearerToken.Trim()}");
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(actor.DelegatedAuthorizationHeader))
         {
             message.Headers.TryAddWithoutValidation("Authorization", actor.DelegatedAuthorizationHeader);
         }
@@ -74,7 +82,11 @@ public sealed class HttpToolDownstreamClient(
             message.Headers.TryAddWithoutValidation("x-afh-internal-api-key", options.Value.DownstreamApiKey);
         }
 
-        if (tool.Endpoint.Method is "POST" or "PUT" or "PATCH")
+        if (IsSnowflakeAgentTool(tool))
+        {
+            message.Content = JsonContent.Create(CreateSnowflakeAgentPayload(arguments));
+        }
+        else if (tool.Endpoint.Method is "POST" or "PUT" or "PATCH")
         {
             message.Content = JsonContent.Create(arguments);
         }
@@ -108,6 +120,11 @@ public sealed class HttpToolDownstreamClient(
         }
 
         var route = tool.Endpoint.RouteTemplate;
+        if (string.IsNullOrWhiteSpace(route))
+        {
+            return baseUrl.TrimEnd('/');
+        }
+
         var pathParameterNames = RouteParameterPattern
             .Matches(route)
             .Select(match => match.Groups["name"].Value)
@@ -195,5 +212,36 @@ public sealed class HttpToolDownstreamClient(
         }
 
         parts.Add($"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(stringValue)}");
+    }
+
+    private static bool IsSnowflakeAgentTool(AiToolDescriptor tool)
+        => string.Equals(tool.Name, SnowflakeAgentToolName, StringComparison.OrdinalIgnoreCase);
+
+    private static object CreateSnowflakeAgentPayload(JsonElement arguments)
+    {
+        var question = arguments.ValueKind == JsonValueKind.Object &&
+                       arguments.TryGetProperty("question", out var questionElement) &&
+                       questionElement.ValueKind == JsonValueKind.String
+            ? questionElement.GetString()
+            : null;
+
+        return new
+        {
+            messages = new[]
+            {
+                new
+                {
+                    role = "user",
+                    content = new[]
+                    {
+                        new
+                        {
+                            type = "text",
+                            text = question ?? string.Empty
+                        }
+                    }
+                }
+            }
+        };
     }
 }

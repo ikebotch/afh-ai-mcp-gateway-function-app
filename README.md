@@ -45,6 +45,7 @@ The JSON-RPC MCP endpoint supports:
 | `aum.get_my_aum_summary` | Adviser Insights | `GET /v1/me/aum-summary` |
 | `aum.find_my_high_value_clients` | Adviser Insights | `GET /v1/me/clients/highest-policy-value` |
 | `aum.find_my_clients_missing_annual_review` | Adviser Insights | `GET /v1/me/clients/missing-annual-review` |
+| `snowflake.ask_agent` | Snowflake Cortex Agent | `POST <configured Snowflake agent endpoint>` |
 | `booking.get_my_bookings` | Booking | `GET /v1/admin/bookings` |
 | `booking.search` | Booking | `GET /v1/admin/bookings` |
 | `booking.get_details` | Booking | `GET /v1/bookings/{bookingId}` |
@@ -107,7 +108,7 @@ Default scope mappings include:
 
 | Entra scope | Internal permissions |
 | --- | --- |
-| `mcp.tools.read` | `ai.read` |
+| `mcp.tools.read` | `ai.read`, `booking.read`, `availability.read`, `calendar.read`, `notification.read`, `location.read`, `client.read`, `aum.read` |
 | `mcp.tools.write` | `ai.write` |
 | `mcp.tools.booking.read` | `booking.read`, `availability.read` |
 | `mcp.tools.aum.read` | `aum.read` |
@@ -133,9 +134,45 @@ booking.find_availability
 booking.get_my_bookings
 booking.search
 booking.get_details
+snowflake.ask_agent
 ```
 
 Other tools stay in dry-run mode unless explicitly listed under `McpGateway__RealDownstreamTools`.
+
+## Snowflake Cortex Agent
+
+Configure the Snowflake Cortex agent endpoint and service bearer token on the MCP Gateway Function App:
+
+```bash
+Services__SnowflakeAgent__EndpointUrl=https://JR56660-RU01452.snowflakecomputing.com/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/<agent-name>
+McpGateway__SnowflakeAgent__BearerToken=<snowflake-agent-bearer-token>
+```
+
+The MCP tool accepts:
+
+```json
+{
+  "question": "What is the average rating for adviser X?"
+}
+```
+
+The gateway sends Snowflake:
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What is the average rating for adviser X?"
+        }
+      ]
+    }
+  ]
+}
+```
 
 ## Audit
 

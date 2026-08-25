@@ -290,6 +290,49 @@ public sealed class HttpToolDownstreamClientTests
         Assert.Equal("http://booking-service.test/api/v1/bookings/booking-1", handler.Request!.RequestUri!.ToString());
     }
 
+    [Fact]
+    public async Task InvokeAsync_ForSnowflakeAgentTool_WrapsQuestionInMessagesPayload()
+    {
+        var registry = new StaticToolRegistry();
+        Assert.True(registry.TryGetTool("snowflake.ask_agent", out var tool));
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"message":"answer"}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(
+            handler,
+            new Dictionary<string, string?>
+            {
+                ["Services:SnowflakeAgent:EndpointUrl"] = "https://snowflake.test/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/AFH_AGENT"
+            },
+            new McpGatewayOptions
+            {
+                SnowflakeAgent = new McpGatewaySnowflakeAgentOptions
+                {
+                    BearerToken = "snowflake-token"
+                }
+            });
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["aum.read"], "Bearer entra-token");
+        var arguments = JsonSerializer.SerializeToElement(new { question = "What is the average rating for adviser X?" });
+
+        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.False(result.IsDryRun);
+        Assert.Equal("https://snowflake.test/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/AFH_AGENT", handler.Request!.RequestUri!.ToString());
+        Assert.Equal(HttpMethod.Post, handler.Request.Method);
+        Assert.Equal("Bearer snowflake-token", handler.Request.Headers.Authorization?.ToString());
+
+        Assert.NotNull(handler.RequestBody);
+        var body = handler.RequestBody!;
+        using var json = JsonDocument.Parse(body);
+        var message = json.RootElement.GetProperty("messages")[0];
+        Assert.Equal("user", message.GetProperty("role").GetString());
+        var content = message.GetProperty("content")[0];
+        Assert.Equal("text", content.GetProperty("type").GetString());
+        Assert.Equal("What is the average rating for adviser X?", content.GetProperty("text").GetString());
+    }
+
     private static HttpToolDownstreamClient CreateClient(
         HttpMessageHandler handler,
         IReadOnlyDictionary<string, string?> configurationValues,
@@ -314,10 +357,16 @@ public sealed class HttpToolDownstreamClientTests
     {
         public HttpRequestMessage? Request { get; private set; }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        public string? RequestBody { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Request = request;
-            return Task.FromResult(response);
+            RequestBody = request.Content is null
+                ? null
+                : await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+            return response;
         }
     }
 }

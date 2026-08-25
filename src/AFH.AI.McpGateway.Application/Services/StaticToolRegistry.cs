@@ -18,6 +18,14 @@ public sealed class StaticToolRegistry : IToolRegistry
     private static readonly IReadOnlyCollection<AiToolDescriptor> Tools =
     [
         new(
+            "snowflake.ask_agent",
+            "Snowflake Cortex Agent",
+            "Asks the configured Snowflake Cortex agent a natural-language question over the permitted Snowflake data.",
+            AiToolSideEffectLevel.ReadOnly,
+            ["aum.read"],
+            new("POST", "", "Services:SnowflakeAgent:EndpointUrl"),
+            [new("question", "string", true, "The natural-language question to ask the Snowflake Cortex agent.")]),
+        new(
             "aum.get_my_adviser_profile",
             "Adviser Insights",
             "Reads the signed-in adviser profile from the Adviser Insights service.",

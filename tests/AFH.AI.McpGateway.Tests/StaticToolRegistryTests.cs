@@ -54,4 +54,19 @@ public sealed class StaticToolRegistryTests
         Assert.Equal("/v1/me/clients/highest-policy-value", highValue.Endpoint.RouteTemplate);
         Assert.Equal("/v1/me/clients/missing-annual-review", missingReview.Endpoint.RouteTemplate);
     }
+
+    [Fact]
+    public void GetTools_ContainsSnowflakeAgentTool()
+    {
+        var registry = new StaticToolRegistry();
+
+        var tool = registry.GetTools().Single(candidate => candidate.Name == "snowflake.ask_agent");
+
+        Assert.Equal("Snowflake Cortex Agent", tool.OwnerService);
+        Assert.Equal("POST", tool.Endpoint.Method);
+        Assert.Equal("", tool.Endpoint.RouteTemplate);
+        Assert.Equal("Services:SnowflakeAgent:EndpointUrl", tool.Endpoint.ServiceBaseUrlSetting);
+        Assert.Contains("aum.read", tool.RequiredPermissions);
+        Assert.Contains(tool.Parameters, parameter => parameter.Name == "question" && parameter.Required);
+    }
 }

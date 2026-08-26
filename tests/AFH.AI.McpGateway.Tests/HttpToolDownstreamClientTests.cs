@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using AFH.AI.McpGateway.Application.Services;
@@ -333,6 +334,44 @@ public sealed class HttpToolDownstreamClientTests
         Assert.Equal("What is the average rating for adviser X?", content.GetProperty("text").GetString());
     }
 
+    [Fact]
+    public async Task InvokeAsync_ForSnowflakeAgentTool_WithKeyPairJwt_AddsGeneratedJwtHeaders()
+    {
+        var registry = new StaticToolRegistry();
+        Assert.True(registry.TryGetTool("snowflake.ask_agent", out var tool));
+        using var rsa = RSA.Create(2048);
+        var privateKey = rsa.ExportPkcs8PrivateKeyPem();
+        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"message":"answer"}""", Encoding.UTF8, "application/json")
+        });
+        var client = CreateClient(
+            handler,
+            new Dictionary<string, string?>
+            {
+                ["Services:SnowflakeAgent:EndpointUrl"] = "https://snowflake.test/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/AFH_AGENT"
+            },
+            new McpGatewayOptions
+            {
+                SnowflakeAgent = new McpGatewaySnowflakeAgentOptions
+                {
+                    AuthenticationMode = "KeyPairJwt",
+                    AccountIdentifier = "jr56660-ru01452",
+                    User = "soldesign",
+                    PrivateKey = privateKey
+                }
+            });
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["aum.read"], "Bearer entra-token");
+        var arguments = JsonSerializer.SerializeToElement(new { question = "Which clients have missing reviews?" });
+
+        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.StartsWith("Bearer ey", handler.Request!.Headers.Authorization?.ToString(), StringComparison.Ordinal);
+        Assert.True(handler.Request.Headers.TryGetValues("X-Snowflake-Authorization-Token-Type", out var values));
+        Assert.Equal("KEYPAIR_JWT", Assert.Single(values));
+    }
+
     private static HttpToolDownstreamClient CreateClient(
         HttpMessageHandler handler,
         IReadOnlyDictionary<string, string?> configurationValues,
@@ -345,7 +384,8 @@ public sealed class HttpToolDownstreamClientTests
         return new HttpToolDownstreamClient(
             new StaticHttpClientFactory(new HttpClient(handler)),
             configuration,
-            Options.Create(options));
+            Options.Create(options),
+            new SnowflakeAgentAuthenticator(Options.Create(options)));
     }
 
     private sealed class StaticHttpClientFactory(HttpClient client) : IHttpClientFactory

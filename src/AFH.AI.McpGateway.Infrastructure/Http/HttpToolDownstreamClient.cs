@@ -17,7 +17,8 @@ namespace AFH.AI.McpGateway.Infrastructure.Http;
 public sealed class HttpToolDownstreamClient(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration,
-    IOptions<McpGatewayOptions> options) : IToolDownstreamClient
+    IOptions<McpGatewayOptions> options,
+    ISnowflakeAgentAuthenticator snowflakeAgentAuthenticator) : IToolDownstreamClient
 {
     private static readonly Regex RouteParameterPattern = new(@"\{(?<name>[^}]+)\}", RegexOptions.Compiled);
     private const string SnowflakeAgentToolName = "snowflake.ask_agent";
@@ -67,10 +68,7 @@ public sealed class HttpToolDownstreamClient(
 
         if (IsSnowflakeAgentTool(tool))
         {
-            if (!string.IsNullOrWhiteSpace(options.Value.SnowflakeAgent.BearerToken))
-            {
-                message.Headers.TryAddWithoutValidation("Authorization", $"Bearer {options.Value.SnowflakeAgent.BearerToken.Trim()}");
-            }
+            snowflakeAgentAuthenticator.Apply(message);
         }
         else if (!string.IsNullOrWhiteSpace(actor.DelegatedAuthorizationHeader))
         {

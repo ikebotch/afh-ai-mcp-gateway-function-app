@@ -65,9 +65,39 @@ public sealed class McpGatewayOptions
 public sealed class McpGatewaySnowflakeAgentOptions
 {
     /// <summary>
-    /// Gets or sets the bearer token used when calling the Snowflake agent endpoint.
+    /// Gets or sets the Snowflake agent authentication mode. Supported values are BearerToken and KeyPairJwt.
+    /// </summary>
+    public string AuthenticationMode { get; set; } = "BearerToken";
+
+    /// <summary>
+    /// Gets or sets the bearer token used when calling the Snowflake agent endpoint. Used when AuthenticationMode is BearerToken.
     /// </summary>
     public string? BearerToken { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Snowflake account identifier used in generated key-pair JWT claims.
+    /// </summary>
+    public string? AccountIdentifier { get; set; }
+
+    /// <summary>
+    /// Gets or sets the Snowflake user name used in generated key-pair JWT claims.
+    /// </summary>
+    public string? User { get; set; }
+
+    /// <summary>
+    /// Gets or sets the PEM private key used to sign generated key-pair JWTs.
+    /// </summary>
+    public string? PrivateKey { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional passphrase for an encrypted PEM private key.
+    /// </summary>
+    public string? PrivateKeyPassphrase { get; set; }
+
+    /// <summary>
+    /// Gets or sets generated key-pair JWT lifetime in minutes. Snowflake accepts a maximum lifetime of one hour.
+    /// </summary>
+    public int JwtLifetimeMinutes { get; set; } = 55;
 }
 
 /// <summary>

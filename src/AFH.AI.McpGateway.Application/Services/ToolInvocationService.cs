@@ -70,7 +70,44 @@ public sealed class ToolInvocationService(
             throw;
         }
 
-        var result = await downstreamClient.InvokeAsync(tool, request.Arguments, actor, cancellationToken).ConfigureAwait(false);
+        ToolDownstreamResult result;
+        try
+        {
+            result = await downstreamClient.InvokeAsync(tool, request.Arguments, actor, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            var exceptionFailureReason = Truncate(ex.Message, MaxFailureReasonLength);
+            var errorContent = JsonSerializer.SerializeToElement(new
+            {
+                error = "Downstream tool invocation failed.",
+                detail = exceptionFailureReason
+            });
+
+            await auditSink.WriteAsync(
+                new AiAuditEvent(
+                    Guid.NewGuid().ToString("N"),
+                    DateTimeOffset.UtcNow,
+                    actor.ActorId,
+                    actor.AgentId,
+                    tool.Name,
+                    "Failed",
+                    actor.CorrelationId,
+                    tool.OwnerService,
+                    null,
+                    "Real",
+                    500,
+                    stopwatch.ElapsedMilliseconds,
+                    exceptionFailureReason,
+                    tool.Endpoint.Method,
+                    SerializePayload(request.Arguments),
+                    SerializePayload(errorContent)),
+                cancellationToken).ConfigureAwait(false);
+
+            return new McpToolInvocationResponse(tool.Name, actor.CorrelationId, 500, errorContent);
+        }
+
         stopwatch.Stop();
 
         var failureReason = CreateFailureReason(result);

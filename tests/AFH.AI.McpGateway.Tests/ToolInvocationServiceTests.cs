@@ -198,6 +198,49 @@ public sealed class ToolInvocationServiceTests
     }
 
     [Fact]
+    public async Task InvokeAsync_WhenDownstreamThrows_AuditsExceptionAndReturnsToolError()
+    {
+        var registry = new StaticToolRegistry();
+        var downstream = new Mock<IToolDownstreamClient>(MockBehavior.Strict);
+        var audit = new Mock<IAiAuditSink>(MockBehavior.Strict);
+        var service = new ToolInvocationService(registry, downstream.Object, audit.Object);
+        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["aum.read"]);
+        var arguments = JsonSerializer.SerializeToElement(new { question = "Show advisers." });
+        var request = new McpToolInvocationRequest(arguments, null);
+
+        downstream
+            .Setup(client => client.InvokeAsync(
+                It.Is<AiToolDescriptor>(tool => tool.Name == "snowflake.ask_agent"),
+                arguments,
+                actor,
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("McpGateway:SnowflakeAgent:PrivateKey is required."));
+
+        audit
+            .Setup(sink => sink.WriteAsync(
+                It.Is<AiAuditEvent>(entry =>
+                    entry.ToolName == "snowflake.ask_agent" &&
+                    entry.Outcome == "Failed" &&
+                    entry.DownstreamService == "Snowflake Cortex Agent" &&
+                    entry.DownstreamTarget == null &&
+                    entry.ExecutionMode == "Real" &&
+                    entry.StatusCode == 500 &&
+                    entry.FailureReason == "McpGateway:SnowflakeAgent:PrivateKey is required." &&
+                    entry.ResponsePayload != null &&
+                    entry.ResponsePayload.Contains("Downstream tool invocation failed.", StringComparison.Ordinal)),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var response = await service.InvokeAsync("snowflake.ask_agent", request, actor, CancellationToken.None);
+
+        Assert.Equal(500, response.StatusCode);
+        Assert.Equal("snowflake.ask_agent", response.ToolName);
+        Assert.Equal("Downstream tool invocation failed.", response.Content.GetProperty("error").GetString());
+        downstream.VerifyAll();
+        audit.VerifyAll();
+    }
+
+    [Fact]
     public async Task InvokeAsync_WhenDownstreamReturnsErrorBody_AuditsFailureReasonWithErrorDetails()
     {
         var registry = new StaticToolRegistry();

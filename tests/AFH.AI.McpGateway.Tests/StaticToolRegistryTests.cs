@@ -62,10 +62,10 @@ public sealed class StaticToolRegistryTests
 
         var tool = registry.GetTools().Single(candidate => candidate.Name == "snowflake.ask_agent");
 
-        Assert.Equal("Snowflake Cortex Agent", tool.OwnerService);
+        Assert.Equal("Adviser Insights", tool.OwnerService);
         Assert.Equal("POST", tool.Endpoint.Method);
-        Assert.Equal("", tool.Endpoint.RouteTemplate);
-        Assert.Equal("Services:SnowflakeAgent:EndpointUrl", tool.Endpoint.ServiceBaseUrlSetting);
+        Assert.Equal("/v1/insights/ask", tool.Endpoint.RouteTemplate);
+        Assert.Equal("Services:AdviserInsights:BaseUrl", tool.Endpoint.ServiceBaseUrlSetting);
         Assert.Contains("aum.read", tool.RequiredPermissions);
         Assert.Contains(tool.Parameters, parameter => parameter.Name == "question" && parameter.Required);
     }

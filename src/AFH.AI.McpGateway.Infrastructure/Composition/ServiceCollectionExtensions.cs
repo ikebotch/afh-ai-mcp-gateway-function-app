@@ -29,7 +29,6 @@ public static class ServiceCollectionExtensions
 
         services.AddHttpClient("afh-downstream-tools");
         services.AddSingleton<McpGatewayAuthenticator>();
-        services.AddSingleton<ISnowflakeAgentAuthenticator, SnowflakeAgentAuthenticator>();
         services.AddScoped<IToolDownstreamClient, HttpToolDownstreamClient>();
         services.AddSingleton<IAiAuditSink>(provider =>
         {

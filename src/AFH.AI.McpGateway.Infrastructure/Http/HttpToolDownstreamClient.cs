@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -18,12 +17,9 @@ namespace AFH.AI.McpGateway.Infrastructure.Http;
 public sealed class HttpToolDownstreamClient(
     IHttpClientFactory httpClientFactory,
     IConfiguration configuration,
-    IOptions<McpGatewayOptions> options,
-    ISnowflakeAgentAuthenticator snowflakeAgentAuthenticator) : IToolDownstreamClient
+    IOptions<McpGatewayOptions> options) : IToolDownstreamClient
 {
     private static readonly Regex RouteParameterPattern = new(@"\{(?<name>[^}]+)\}", RegexOptions.Compiled);
-    private const string SnowflakeAgentToolName = "snowflake.ask_agent";
-    private const string SnowflakeUserAgent = "AFH-AI-MCP-Gateway/1.0";
 
     /// <inheritdoc />
     public async Task<ToolDownstreamResult> InvokeAsync(
@@ -68,13 +64,7 @@ public sealed class HttpToolDownstreamClient(
             message.Headers.TryAddWithoutValidation("x-afh-ai-approval-id", actor.ApprovalId);
         }
 
-        if (IsSnowflakeAgentTool(tool))
-        {
-            message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            message.Headers.UserAgent.ParseAdd(SnowflakeUserAgent);
-            snowflakeAgentAuthenticator.Apply(message);
-        }
-        else if (!string.IsNullOrWhiteSpace(actor.DelegatedAuthorizationHeader))
+        if (!string.IsNullOrWhiteSpace(actor.DelegatedAuthorizationHeader))
         {
             message.Headers.TryAddWithoutValidation("Authorization", actor.DelegatedAuthorizationHeader);
         }
@@ -84,11 +74,7 @@ public sealed class HttpToolDownstreamClient(
             message.Headers.TryAddWithoutValidation("x-afh-internal-api-key", options.Value.DownstreamApiKey);
         }
 
-        if (IsSnowflakeAgentTool(tool))
-        {
-            message.Content = JsonContent.Create(CreateSnowflakeAgentPayload(arguments));
-        }
-        else if (tool.Endpoint.Method is "POST" or "PUT" or "PATCH")
+        if (tool.Endpoint.Method is "POST" or "PUT" or "PATCH")
         {
             message.Content = JsonContent.Create(arguments);
         }
@@ -216,35 +202,4 @@ public sealed class HttpToolDownstreamClient(
         parts.Add($"{Uri.EscapeDataString(name)}={Uri.EscapeDataString(stringValue)}");
     }
 
-    private static bool IsSnowflakeAgentTool(AiToolDescriptor tool)
-        => string.Equals(tool.Name, SnowflakeAgentToolName, StringComparison.OrdinalIgnoreCase);
-
-    private static object CreateSnowflakeAgentPayload(JsonElement arguments)
-    {
-        var question = arguments.ValueKind == JsonValueKind.Object &&
-                       arguments.TryGetProperty("question", out var questionElement) &&
-                       questionElement.ValueKind == JsonValueKind.String
-            ? questionElement.GetString()
-            : null;
-
-        return new
-        {
-            stream = false,
-            messages = new[]
-            {
-                new
-                {
-                    role = "user",
-                    content = new[]
-                    {
-                        new
-                        {
-                            type = "text",
-                            text = question ?? string.Empty
-                        }
-                    }
-                }
-            }
-        };
-    }
 }

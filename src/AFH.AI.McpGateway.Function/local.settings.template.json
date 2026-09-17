@@ -18,15 +18,6 @@
     "McpGateway__RealDownstreamTools__11": "booking.get_details",
     "McpGateway__RealDownstreamTools__12": "snowflake.ask_agent",
     "McpGateway__ApiKey": "",
-    "McpGateway__SnowflakeAgent__AuthenticationMode": "KeyPairJwt",
-    "McpGateway__SnowflakeAgent__BearerToken": "",
-    "McpGateway__SnowflakeAgent__AccountIdentifier": "JR56660-RU01452",
-    "McpGateway__SnowflakeAgent__User": "SOLDESIGN",
-    "McpGateway__SnowflakeAgent__Role": "DEV_SOLDESIGN_ALL",
-    "McpGateway__SnowflakeAgent__Warehouse": "DEV_WH",
-    "McpGateway__SnowflakeAgent__PrivateKey": "<snowflake-private-key-pem>",
-    "McpGateway__SnowflakeAgent__PrivateKeyPassphrase": "",
-    "McpGateway__SnowflakeAgent__JwtLifetimeMinutes": "55",
     "McpGateway__Authentication__Enabled": "false",
     "McpGateway__Authentication__TenantId": "",
     "McpGateway__Authentication__Audience": "api://afh-ai-mcp-gateway",
@@ -42,7 +33,6 @@
     "Services__Notification__BaseUrl": "http://localhost:7073",
     "Services__Location__BaseUrl": "http://localhost:7074",
     "Services__ClientIntegration__BaseUrl": "http://localhost:7075",
-    "Services__DevOps__BaseUrl": "http://localhost:7076",
-    "Services__SnowflakeAgent__EndpointUrl": "https://JR56660-RU01452.snowflakecomputing.com/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/<agent-name>"
+    "Services__DevOps__BaseUrl": "http://localhost:7076"
   }
 }

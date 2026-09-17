@@ -19,11 +19,11 @@ public sealed class StaticToolRegistry : IToolRegistry
     [
         new(
             "snowflake.ask_agent",
-            "Snowflake Cortex Agent",
-            "Asks the configured Snowflake Cortex agent a natural-language question over the permitted Snowflake data.",
+            "Adviser Insights",
+            "Asks the Adviser Insights Snowflake Cortex agent a natural-language question within the signed-in user's permitted AUM scope.",
             AiToolSideEffectLevel.ReadOnly,
             ["aum.read"],
-            new("POST", "", "Services:SnowflakeAgent:EndpointUrl"),
+            new("POST", "/v1/insights/ask", "Services:AdviserInsights:BaseUrl"),
             [new("question", "string", true, "The natural-language question to ask the Snowflake Cortex agent.")]),
         new(
             "aum.get_my_adviser_profile",

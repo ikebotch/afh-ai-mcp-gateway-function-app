@@ -1,5 +1,4 @@
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using AFH.AI.McpGateway.Application.Services;
@@ -292,7 +291,7 @@ public sealed class HttpToolDownstreamClientTests
     }
 
     [Fact]
-    public async Task InvokeAsync_ForSnowflakeAgentTool_WrapsQuestionInMessagesPayload()
+    public async Task InvokeAsync_ForSnowflakeAgentTool_CallsAdviserInsightsWithDelegatedToken()
     {
         var registry = new StaticToolRegistry();
         Assert.True(registry.TryGetTool("snowflake.ask_agent", out var tool));
@@ -304,15 +303,9 @@ public sealed class HttpToolDownstreamClientTests
             handler,
             new Dictionary<string, string?>
             {
-                ["Services:SnowflakeAgent:EndpointUrl"] = "https://snowflake.test/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/AFH_AGENT"
+                ["Services:AdviserInsights:BaseUrl"] = "https://adviser-insights.test"
             },
-            new McpGatewayOptions
-            {
-                SnowflakeAgent = new McpGatewaySnowflakeAgentOptions
-                {
-                    BearerToken = "snowflake-token"
-                }
-            });
+            new McpGatewayOptions());
         var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["aum.read"], "Bearer entra-token");
         var arguments = JsonSerializer.SerializeToElement(new { question = "What is the average rating for adviser X?" });
 
@@ -320,88 +313,14 @@ public sealed class HttpToolDownstreamClientTests
 
         Assert.Equal(200, result.StatusCode);
         Assert.False(result.IsDryRun);
-        Assert.Equal("https://snowflake.test/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/AFH_AGENT", handler.Request!.RequestUri!.ToString());
+        Assert.Equal("https://adviser-insights.test/api/v1/insights/ask", handler.Request!.RequestUri!.ToString());
         Assert.Equal(HttpMethod.Post, handler.Request.Method);
-        Assert.Equal("Bearer snowflake-token", handler.Request.Headers.Authorization?.ToString());
-        Assert.Contains(handler.Request.Headers.Accept, value => value.MediaType == "application/json");
-        Assert.Equal("AFH-AI-MCP-Gateway/1.0", handler.Request.Headers.UserAgent.ToString());
+        Assert.Equal("Bearer entra-token", handler.Request.Headers.Authorization?.ToString());
 
         Assert.NotNull(handler.RequestBody);
         var body = handler.RequestBody!;
         using var json = JsonDocument.Parse(body);
-        Assert.False(json.RootElement.GetProperty("stream").GetBoolean());
-        var message = json.RootElement.GetProperty("messages")[0];
-        Assert.Equal("user", message.GetProperty("role").GetString());
-        var content = message.GetProperty("content")[0];
-        Assert.Equal("text", content.GetProperty("type").GetString());
-        Assert.Equal("What is the average rating for adviser X?", content.GetProperty("text").GetString());
-    }
-
-    [Fact]
-    public async Task InvokeAsync_ForSnowflakeAgentTool_WithKeyPairJwt_AddsGeneratedJwtHeaders()
-    {
-        var registry = new StaticToolRegistry();
-        Assert.True(registry.TryGetTool("snowflake.ask_agent", out var tool));
-        using var rsa = RSA.Create(2048);
-        var privateKey = rsa.ExportPkcs8PrivateKeyPem();
-        var handler = new CapturingHandler(new HttpResponseMessage(HttpStatusCode.OK)
-        {
-            Content = new StringContent("""{"message":"answer"}""", Encoding.UTF8, "application/json")
-        });
-        var client = CreateClient(
-            handler,
-            new Dictionary<string, string?>
-            {
-                ["Services:SnowflakeAgent:EndpointUrl"] = "https://snowflake.test/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/AFH_AGENT"
-            },
-            new McpGatewayOptions
-            {
-                SnowflakeAgent = new McpGatewaySnowflakeAgentOptions
-                {
-                    AuthenticationMode = "KeyPairJwt",
-                    AccountIdentifier = "jr56660-ru01452",
-                    User = "soldesign",
-                    Role = "DEV_SOLDESIGN_ALL",
-                    Warehouse = "DEV_WH",
-                    PrivateKey = privateKey
-                }
-            });
-        var actor = new AiActorContext("user-1", "copilot", null, "corr-1", ["aum.read"], "Bearer entra-token");
-        var arguments = JsonSerializer.SerializeToElement(new { question = "Which clients have missing reviews?" });
-
-        var result = await client.InvokeAsync(tool!, arguments, actor, CancellationToken.None);
-
-        Assert.Equal(200, result.StatusCode);
-        Assert.StartsWith("Bearer ey", handler.Request!.Headers.Authorization?.ToString(), StringComparison.Ordinal);
-        Assert.True(handler.Request.Headers.TryGetValues("X-Snowflake-Authorization-Token-Type", out var values));
-        Assert.Equal("KEYPAIR_JWT", Assert.Single(values));
-        Assert.Equal("DEV_SOLDESIGN_ALL", Assert.Single(handler.Request.Headers.GetValues("X-Snowflake-Role")));
-        Assert.Equal("DEV_WH", Assert.Single(handler.Request.Headers.GetValues("X-Snowflake-Warehouse")));
-    }
-
-    [Fact]
-    public void SnowflakeAgentAuthenticator_WithKeyPairJwt_CanGenerateConsecutiveTokens()
-    {
-        using var rsa = RSA.Create(2048);
-        var options = Options.Create(new McpGatewayOptions
-        {
-            SnowflakeAgent = new McpGatewaySnowflakeAgentOptions
-            {
-                AuthenticationMode = "KeyPairJwt",
-                AccountIdentifier = "jr56660-ru01452",
-                User = "soldesign",
-                PrivateKey = rsa.ExportPkcs8PrivateKeyPem()
-            }
-        });
-        var authenticator = new SnowflakeAgentAuthenticator(options);
-        using var firstRequest = new HttpRequestMessage();
-        using var secondRequest = new HttpRequestMessage();
-
-        authenticator.Apply(firstRequest);
-        authenticator.Apply(secondRequest);
-
-        Assert.StartsWith("Bearer ey", firstRequest.Headers.Authorization?.ToString(), StringComparison.Ordinal);
-        Assert.StartsWith("Bearer ey", secondRequest.Headers.Authorization?.ToString(), StringComparison.Ordinal);
+        Assert.Equal("What is the average rating for adviser X?", json.RootElement.GetProperty("question").GetString());
     }
 
     private static HttpToolDownstreamClient CreateClient(
@@ -416,8 +335,7 @@ public sealed class HttpToolDownstreamClientTests
         return new HttpToolDownstreamClient(
             new StaticHttpClientFactory(new HttpClient(handler)),
             configuration,
-            Options.Create(options),
-            new SnowflakeAgentAuthenticator(Options.Create(options)));
+            Options.Create(options));
     }
 
     private sealed class StaticHttpClientFactory(HttpClient client) : IHttpClientFactory

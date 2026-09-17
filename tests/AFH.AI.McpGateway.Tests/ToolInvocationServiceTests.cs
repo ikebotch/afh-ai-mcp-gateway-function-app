@@ -214,18 +214,18 @@ public sealed class ToolInvocationServiceTests
                 arguments,
                 actor,
                 It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("McpGateway:SnowflakeAgent:PrivateKey is required."));
+            .ThrowsAsync(new InvalidOperationException("Adviser Insights downstream is unavailable."));
 
         audit
             .Setup(sink => sink.WriteAsync(
                 It.Is<AiAuditEvent>(entry =>
                     entry.ToolName == "snowflake.ask_agent" &&
                     entry.Outcome == "Failed" &&
-                    entry.DownstreamService == "Snowflake Cortex Agent" &&
+                    entry.DownstreamService == "Adviser Insights" &&
                     entry.DownstreamTarget == null &&
                     entry.ExecutionMode == "Real" &&
                     entry.StatusCode == 500 &&
-                    entry.FailureReason == "McpGateway:SnowflakeAgent:PrivateKey is required." &&
+                    entry.FailureReason == "Adviser Insights downstream is unavailable." &&
                     entry.ResponsePayload != null &&
                     entry.ResponsePayload.Contains("Downstream tool invocation failed.", StringComparison.Ordinal)),
                 It.IsAny<CancellationToken>()))

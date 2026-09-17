@@ -229,6 +229,7 @@ public sealed class HttpToolDownstreamClient(
 
         return new
         {
+            stream = false,
             messages = new[]
             {
                 new

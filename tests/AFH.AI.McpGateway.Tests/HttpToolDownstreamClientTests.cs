@@ -329,6 +329,7 @@ public sealed class HttpToolDownstreamClientTests
         Assert.NotNull(handler.RequestBody);
         var body = handler.RequestBody!;
         using var json = JsonDocument.Parse(body);
+        Assert.False(json.RootElement.GetProperty("stream").GetBoolean());
         var message = json.RootElement.GetProperty("messages")[0];
         Assert.Equal("user", message.GetProperty("role").GetString());
         var content = message.GetProperty("content")[0];

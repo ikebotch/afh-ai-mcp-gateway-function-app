@@ -51,6 +51,13 @@ public sealed class SnowflakeAgentAuthenticator(IOptions<McpGatewayOptions> opti
         var qualifiedUser = $"{accountIdentifier}.{user}";
         var now = DateTimeOffset.UtcNow;
         var lifetimeMinutes = Math.Clamp(options.JwtLifetimeMinutes, 1, MaximumJwtLifetimeMinutes);
+        var signingKey = new RsaSecurityKey(rsa)
+        {
+            CryptoProviderFactory = new CryptoProviderFactory
+            {
+                CacheSignatureProviders = false
+            }
+        };
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Issuer = $"{qualifiedUser}.{publicKeyFingerprint}",
@@ -61,7 +68,7 @@ public sealed class SnowflakeAgentAuthenticator(IOptions<McpGatewayOptions> opti
             IssuedAt = now.UtcDateTime,
             NotBefore = now.UtcDateTime,
             Expires = now.AddMinutes(lifetimeMinutes).UtcDateTime,
-            SigningCredentials = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256)
+            SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.RsaSha256)
         };
 
         return new JsonWebTokenHandler().CreateToken(tokenDescriptor);

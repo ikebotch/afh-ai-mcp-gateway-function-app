@@ -374,6 +374,31 @@ public sealed class HttpToolDownstreamClientTests
         Assert.Equal("KEYPAIR_JWT", Assert.Single(values));
     }
 
+    [Fact]
+    public void SnowflakeAgentAuthenticator_WithKeyPairJwt_CanGenerateConsecutiveTokens()
+    {
+        using var rsa = RSA.Create(2048);
+        var options = Options.Create(new McpGatewayOptions
+        {
+            SnowflakeAgent = new McpGatewaySnowflakeAgentOptions
+            {
+                AuthenticationMode = "KeyPairJwt",
+                AccountIdentifier = "jr56660-ru01452",
+                User = "soldesign",
+                PrivateKey = rsa.ExportPkcs8PrivateKeyPem()
+            }
+        });
+        var authenticator = new SnowflakeAgentAuthenticator(options);
+        using var firstRequest = new HttpRequestMessage();
+        using var secondRequest = new HttpRequestMessage();
+
+        authenticator.Apply(firstRequest);
+        authenticator.Apply(secondRequest);
+
+        Assert.StartsWith("Bearer ey", firstRequest.Headers.Authorization?.ToString(), StringComparison.Ordinal);
+        Assert.StartsWith("Bearer ey", secondRequest.Headers.Authorization?.ToString(), StringComparison.Ordinal);
+    }
+
     private static HttpToolDownstreamClient CreateClient(
         HttpMessageHandler handler,
         IReadOnlyDictionary<string, string?> configurationValues,

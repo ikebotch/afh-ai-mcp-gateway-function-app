@@ -323,6 +323,8 @@ public sealed class HttpToolDownstreamClientTests
         Assert.Equal("https://snowflake.test/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/AFH_AGENT", handler.Request!.RequestUri!.ToString());
         Assert.Equal(HttpMethod.Post, handler.Request.Method);
         Assert.Equal("Bearer snowflake-token", handler.Request.Headers.Authorization?.ToString());
+        Assert.Contains(handler.Request.Headers.Accept, value => value.MediaType == "application/json");
+        Assert.Equal("AFH-AI-MCP-Gateway/1.0", handler.Request.Headers.UserAgent.ToString());
 
         Assert.NotNull(handler.RequestBody);
         var body = handler.RequestBody!;

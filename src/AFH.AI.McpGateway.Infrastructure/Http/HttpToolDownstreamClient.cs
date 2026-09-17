@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -22,6 +23,7 @@ public sealed class HttpToolDownstreamClient(
 {
     private static readonly Regex RouteParameterPattern = new(@"\{(?<name>[^}]+)\}", RegexOptions.Compiled);
     private const string SnowflakeAgentToolName = "snowflake.ask_agent";
+    private const string SnowflakeUserAgent = "AFH-AI-MCP-Gateway/1.0";
 
     /// <inheritdoc />
     public async Task<ToolDownstreamResult> InvokeAsync(
@@ -68,6 +70,8 @@ public sealed class HttpToolDownstreamClient(
 
         if (IsSnowflakeAgentTool(tool))
         {
+            message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            message.Headers.UserAgent.ParseAdd(SnowflakeUserAgent);
             snowflakeAgentAuthenticator.Apply(message);
         }
         else if (!string.IsNullOrWhiteSpace(actor.DelegatedAuthorizationHeader))

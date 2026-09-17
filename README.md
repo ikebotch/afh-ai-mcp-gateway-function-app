@@ -144,10 +144,12 @@ Other tools stay in dry-run mode unless explicitly listed under `McpGateway__Rea
 Configure the Snowflake Cortex agent endpoint and key-pair JWT settings on the MCP Gateway Function App:
 
 ```bash
-Services__SnowflakeAgent__EndpointUrl=https://JR56660-RU01452.snowflakecomputing.com/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/<agent-name>
+Services__SnowflakeAgent__EndpointUrl=https://JR56660-RU01452.snowflakecomputing.com/api/v2/databases/CORTEX_DB/schemas/RAW_DATA/agents/<agent-name>:run
 McpGateway__SnowflakeAgent__AuthenticationMode=KeyPairJwt
 McpGateway__SnowflakeAgent__AccountIdentifier=JR56660-RU01452
 McpGateway__SnowflakeAgent__User=SOLDESIGN
+McpGateway__SnowflakeAgent__Role=DEV_SOLDESIGN_ALL
+McpGateway__SnowflakeAgent__Warehouse=DEV_WH
 McpGateway__SnowflakeAgent__PrivateKey=<snowflake-private-key-pem>
 McpGateway__SnowflakeAgent__PrivateKeyPassphrase=<optional-private-key-passphrase>
 McpGateway__SnowflakeAgent__JwtLifetimeMinutes=55
@@ -158,6 +160,8 @@ With `AuthenticationMode=KeyPairJwt`, the gateway generates a short-lived Snowfl
 ```text
 Authorization: Bearer <generated-jwt>
 X-Snowflake-Authorization-Token-Type: KEYPAIR_JWT
+X-Snowflake-Role: <configured-role>
+X-Snowflake-Warehouse: <configured-warehouse>
 ```
 
 The Snowflake user must have the matching public key assigned in Snowflake. If a temporary static token is needed instead, set `AuthenticationMode=BearerToken` and configure `McpGateway__SnowflakeAgent__BearerToken`.

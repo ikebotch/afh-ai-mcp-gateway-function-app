@@ -14,6 +14,8 @@ public sealed class SnowflakeAgentAuthenticator(IOptions<McpGatewayOptions> opti
     private const string BearerTokenMode = "BearerToken";
     private const string KeyPairJwtMode = "KeyPairJwt";
     private const string TokenTypeHeaderName = "X-Snowflake-Authorization-Token-Type";
+    private const string RoleHeaderName = "X-Snowflake-Role";
+    private const string WarehouseHeaderName = "X-Snowflake-Warehouse";
     private const int MaximumJwtLifetimeMinutes = 60;
 
     /// <inheritdoc />
@@ -23,6 +25,9 @@ public sealed class SnowflakeAgentAuthenticator(IOptions<McpGatewayOptions> opti
         var mode = string.IsNullOrWhiteSpace(snowflakeOptions.AuthenticationMode)
             ? BearerTokenMode
             : snowflakeOptions.AuthenticationMode.Trim();
+
+        AddOptionalHeader(request, RoleHeaderName, snowflakeOptions.Role);
+        AddOptionalHeader(request, WarehouseHeaderName, snowflakeOptions.Warehouse);
 
         if (mode.Equals(KeyPairJwtMode, StringComparison.OrdinalIgnoreCase))
         {
@@ -35,6 +40,14 @@ public sealed class SnowflakeAgentAuthenticator(IOptions<McpGatewayOptions> opti
         if (!string.IsNullOrWhiteSpace(snowflakeOptions.BearerToken))
         {
             request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {snowflakeOptions.BearerToken.Trim()}");
+        }
+    }
+
+    private static void AddOptionalHeader(HttpRequestMessage request, string name, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            request.Headers.TryAddWithoutValidation(name, value.Trim());
         }
     }
 

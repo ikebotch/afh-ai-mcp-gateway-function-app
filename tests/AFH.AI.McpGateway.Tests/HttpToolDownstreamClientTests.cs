@@ -360,6 +360,8 @@ public sealed class HttpToolDownstreamClientTests
                     AuthenticationMode = "KeyPairJwt",
                     AccountIdentifier = "jr56660-ru01452",
                     User = "soldesign",
+                    Role = "DEV_SOLDESIGN_ALL",
+                    Warehouse = "DEV_WH",
                     PrivateKey = privateKey
                 }
             });
@@ -372,6 +374,8 @@ public sealed class HttpToolDownstreamClientTests
         Assert.StartsWith("Bearer ey", handler.Request!.Headers.Authorization?.ToString(), StringComparison.Ordinal);
         Assert.True(handler.Request.Headers.TryGetValues("X-Snowflake-Authorization-Token-Type", out var values));
         Assert.Equal("KEYPAIR_JWT", Assert.Single(values));
+        Assert.Equal("DEV_SOLDESIGN_ALL", Assert.Single(handler.Request.Headers.GetValues("X-Snowflake-Role")));
+        Assert.Equal("DEV_WH", Assert.Single(handler.Request.Headers.GetValues("X-Snowflake-Warehouse")));
     }
 
     [Fact]

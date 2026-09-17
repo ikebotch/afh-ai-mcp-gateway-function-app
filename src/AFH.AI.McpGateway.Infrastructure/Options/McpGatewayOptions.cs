@@ -85,6 +85,16 @@ public sealed class McpGatewaySnowflakeAgentOptions
     public string? User { get; set; }
 
     /// <summary>
+    /// Gets or sets the optional Snowflake role selected for Cortex agent REST requests.
+    /// </summary>
+    public string? Role { get; set; }
+
+    /// <summary>
+    /// Gets or sets the optional Snowflake warehouse selected for Cortex agent REST requests.
+    /// </summary>
+    public string? Warehouse { get; set; }
+
+    /// <summary>
     /// Gets or sets the PEM private key used to sign generated key-pair JWTs.
     /// </summary>
     public string? PrivateKey { get; set; }

@@ -22,6 +22,8 @@
     "McpGateway__SnowflakeAgent__BearerToken": "",
     "McpGateway__SnowflakeAgent__AccountIdentifier": "JR56660-RU01452",
     "McpGateway__SnowflakeAgent__User": "SOLDESIGN",
+    "McpGateway__SnowflakeAgent__Role": "DEV_SOLDESIGN_ALL",
+    "McpGateway__SnowflakeAgent__Warehouse": "DEV_WH",
     "McpGateway__SnowflakeAgent__PrivateKey": "<snowflake-private-key-pem>",
     "McpGateway__SnowflakeAgent__PrivateKeyPassphrase": "",
     "McpGateway__SnowflakeAgent__JwtLifetimeMinutes": "55",
